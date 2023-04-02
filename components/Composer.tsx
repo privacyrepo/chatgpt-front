@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { shallow } from 'zustand/shallow';
 
-import { Box, Button, Card, Grid, IconButton, ListDivider, Menu, MenuItem, Stack, Textarea, Tooltip, Typography } from '@mui/joy';
+import { Badge, Box, Button, Card, Grid, IconButton, ListDivider, Menu, MenuItem, Stack, Textarea, Tooltip, Typography } from '@mui/joy';
 import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import MicIcon from '@mui/icons-material/Mic';
@@ -10,6 +10,8 @@ import PostAddIcon from '@mui/icons-material/PostAdd';
 import StopOutlinedIcon from '@mui/icons-material/StopOutlined';
 import TelegramIcon from '@mui/icons-material/Telegram';
 
+import { countModelTokens } from '@/lib/token-counters';
+import { useActiveConfiguration } from '@/lib/store-chats';
 import { useComposerStore } from '@/lib/store';
 import { useSpeechRecognition } from '@/lib/use-speech-recognition';
 
@@ -50,6 +52,7 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
 
   // external state
   const { history, appendMessageToHistory } = useComposerStore(state => ({ history: state.history, appendMessageToHistory: state.appendMessageToHistory }), shallow);
+  const { chatModelId } = useActiveConfiguration();
 
 
   const handleSendClicked = () => {
@@ -171,6 +174,9 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
   const hideOnMobile = { display: { xs: 'none', md: 'flex' } };
   const hideOnDesktop = { display: { xs: 'flex', md: 'none' } };
 
+  // compute tokens (warning: slow - shall have a toggle)
+  const estimatedTokens = countModelTokens(composeText, chatModelId);
+
   return (
     <Grid container spacing={{ xs: 1, md: 2 }}>
 
@@ -201,6 +207,12 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
             {props.isDeveloperMode ? 'Paste code' : 'Paste'}
           </Button>
 
+          {isSpeechEnabled && <Box sx={{ mt: { xs: 1, md: 2 }, ...hideOnDesktop }}>
+            <IconButton variant={!isRecordingSpeech ? 'plain' : 'solid'} color={!isRecordingSpeech ? 'neutral' : 'warning'} onClick={handleMicClicked}>
+              <MicIcon />
+            </IconButton>
+          </Box>}
+
           <input type='file' multiple hidden ref={attachmentFileInputRef} onChange={handleLoadFile} />
 
         </Stack>
@@ -214,11 +226,33 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
             onKeyDown={handleKeyPress}
             onDragEnter={handleMessageDragEnter}
             value={composeText} onChange={(e) => setComposeText(e.target.value)}
+            slotProps={{
+              textarea: {
+                sx: {
+                  ...(isSpeechEnabled ? { pr: { md: 5 } } : {}),
+                },
+              },
+            }}
             sx={{
               fontSize: '16px',
               lineHeight: 1.75,
-              pr: isSpeechEnabled ? { xs: 4, md: 5 } : 0, // accounts for the microphone icon when supported
             }} />
+
+          <Badge
+            size='md' variant='solid' max={65535} showZero={false}
+            color={estimatedTokens >= (8192 - 2048) ? 'danger' : estimatedTokens >= (4097 - 2048) ? 'warning' : 'primary'}
+            badgeContent={estimatedTokens}
+            sx={{
+              position: 'absolute', bottom: 8, right: 8,
+            }}
+            slotProps={{
+              badge: {
+                sx: {
+                  position: 'static', transform: 'none',
+                },
+              },
+            }}
+          />
 
           <Card
             color='primary' invertedColors variant='soft'
@@ -240,10 +274,10 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
 
           {isSpeechEnabled && (
             <IconButton
+              variant={!isRecordingSpeech ? 'plain' : 'solid'} color={!isRecordingSpeech ? 'primary' : 'warning'}
               onClick={handleMicClicked}
-              color={isRecordingSpeech ? 'warning' : 'primary'}
-              variant={isRecordingSpeech ? 'solid' : 'plain'}
               sx={{
+                ...hideOnMobile,
                 position: 'absolute',
                 top: 0, right: 0,
                 margin: 1, // 8px

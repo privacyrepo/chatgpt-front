@@ -1,10 +1,11 @@
 import * as React from 'react';
 
-import { IconButton, ListDivider, ListItem, ListItemDecorator, Menu, MenuItem, Option, Select, Sheet, Stack, Switch, Typography, useColorScheme, useTheme } from '@mui/joy';
+import { Badge, IconButton, ListDivider, ListItem, ListItemDecorator, Menu, MenuItem, Option, Select, Sheet, Stack, Switch, Typography, useColorScheme } from '@mui/joy';
 import { SxProps } from '@mui/joy/styles/types';
 import AddIcon from '@mui/icons-material/Add';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import LunchDiningIcon from '@mui/icons-material/LunchDining';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -26,7 +27,6 @@ import { useSettingsStore } from '@/lib/store';
  * A Select component that blends-in nicely (cleaner, easier to the eyes)
  */
 function BeautifulSelect<TValue extends string>(props: { value: TValue, items: Record<string, { title: string }>, onChange: (event: any, value: TValue | null) => void, sx?: SxProps }) {
-  const theme = useTheme();
   return (
     <Select
       variant='solid' color='neutral' size='md'
@@ -45,7 +45,8 @@ function BeautifulSelect<TValue extends string>(props: { value: TValue, items: R
       }}
       sx={{
         mx: 0,
-        fontFamily: theme.vars.fontFamily.code,
+        /*fontFamily: theme.vars.fontFamily.code,*/
+        fontWeight: 500,
         ...(props.sx || {}),
       }}
     >
@@ -132,7 +133,12 @@ function PagesMenu(props: { pagesMenuAnchor: HTMLElement | null, onClose: () => 
 /**
  * The top bar of the application, with the model and purpose selection, and menu/settings icons
  */
-export function ApplicationBar(props: { onClearConversation: (id: string | null) => void, onShowSettings: () => void, sx?: SxProps }) {
+export function ApplicationBar({ onClearConversation, onExportConversation, onShowSettings, sx }: {
+  onClearConversation: (conversationId: (string | null)) => void;
+  onExportConversation: (conversationId: (string | null)) => void;
+  onShowSettings: () => void;
+  sx?: SxProps
+}) {
   // state
   const [pagesMenuAnchor, setPagesMenuAnchor] = React.useState<HTMLElement | null>(null);
   const [actionsMenuAnchor, setActionsMenuAnchor] = React.useState<HTMLElement | null>(null);
@@ -163,13 +169,18 @@ export function ApplicationBar(props: { onClearConversation: (id: string | null)
 
   const handleActionShowSettings = (e: React.MouseEvent) => {
     e.stopPropagation();
-    props.onShowSettings();
+    onShowSettings();
     closeActionsMenu();
+  };
+
+  const handleActionExportChat = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onExportConversation(null);
   };
 
   const handleActionClearConversation = (e: React.MouseEvent, id: string | null) => {
     e.stopPropagation();
-    props.onClearConversation(id || null);
+    onClearConversation(id || null);
   };
 
 
@@ -181,7 +192,7 @@ export function ApplicationBar(props: { onClearConversation: (id: string | null)
       sx={{
         p: 1,
         display: 'flex', flexDirection: 'row', justifyContent: 'space-between',
-        ...(props.sx || {}),
+        ...(sx || {}),
       }}>
 
       <IconButton variant='plain' onClick={event => setPagesMenuAnchor(event.currentTarget)}>
@@ -246,6 +257,15 @@ export function ApplicationBar(props: { onClearConversation: (id: string | null)
       </MenuItem>
 
       <ListDivider />
+
+      <MenuItem onClick={handleActionExportChat}>
+        <ListItemDecorator>
+          <Badge size='sm' badgeContent='new' color='primary'>
+            <ExitToAppIcon />
+          </Badge>
+        </ListItemDecorator>
+        Share via paste.gg
+      </MenuItem>
 
       <MenuItem onClick={e => handleActionClearConversation(e, null)}>
         <ListItemDecorator><DeleteOutlineIcon /></ListItemDecorator>
