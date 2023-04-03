@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { AspectRatio, Box, Button, Grid, Stack, Textarea, Typography, useTheme } from '@mui/joy';
 import { Input, InputAdornment } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+
 import { useActiveConfiguration } from '@/lib/store-chats';
 import { SystemPurposeId, SystemPurposes } from '@/lib/data';
 
@@ -38,17 +38,11 @@ export function PurposeSelector() {
         </Typography>
 
         {/* Add a search bar to filter the list of purposes */}
-        <Input
-          placeholder="Search"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          
-          sx={{ mt: 2, mb: 4, minWidth: '200px' }}
-        />
+        <Input placeholder="Search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} sx={{ mt: 2, mb: 4, minWidth: '200px' }} />
 
         <Grid container spacing={1}>
           {filteredSystemPurposes.map((spId) => (
-            <Grid key={spId} xs={4} lg={3} xl={2} sx={{minWidth: '200px'}}>
+            <Grid key={spId} xs={4} lg={3} xl={2} sx={{ minWidth: '200px' }}>
               <AspectRatio
                 variant="plain"
                 ratio={1}
@@ -69,20 +63,19 @@ export function PurposeSelector() {
                     gap: { xs: 2, lg: 3 },
                     /*fontFamily: theme.vars.fontFamily.code,*/
                     fontWeight: 500,
-                    textAlign : 'center',
+                    textAlign: 'center',
                   }}
                 >
                   <div style={{ fontSize: '2rem' }}>{SystemPurposes[spId as SystemPurposeId]?.symbol}</div>
-            
+
                   <div>{SystemPurposes[spId as SystemPurposeId]?.title}</div>
-                  
                 </Button>
               </AspectRatio>
             </Grid>
           ))}
         </Grid>
 
-        <Typography level="body2" sx={{ mt: 2 } }>
+        <Typography level="body2" sx={{ mt: 2 }}>
           {SystemPurposes[systemPurposeId].description}
         </Typography>
 
