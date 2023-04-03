@@ -8,13 +8,13 @@ import { ApiExportResponse } from '../pages/api/export';
 import { ApplicationBar } from '@/components/ApplicationBar';
 import { ChatMessageList } from '@/components/ChatMessageList';
 import { Composer } from '@/components/Composer';
-import { ConfirmationDialog } from '@/components/util/ConfirmationDialog';
+import { ConfirmationModal } from '@/components/dialogs/ConfirmationModal';
 import { DMessage, useActiveConfiguration, useChatStore } from '@/lib/store-chats';
-import { ExportResultDialog } from '@/components/util/ExportResultDialog';
+import { ExportOutcomeDialog } from '@/components/dialogs/ExportedModal';
 import { Link } from '@/components/util/Link';
 import { SystemPurposes } from '@/lib/data';
-import { exportConversation } from '@/lib/export-conversation';
-import { useSettingsStore } from '@/lib/store';
+import { exportConversation } from '@/lib/export';
+import { useSettingsStore } from '@/lib/store-settings';
 
 
 function createDMessage(role: DMessage['role'], text: string): DMessage {
@@ -37,7 +37,7 @@ function createDMessage(role: DMessage['role'], text: string): DMessage {
 async function _streamAssistantResponseMessage(
   conversationId: string, history: DMessage[],
   apiKey: string | undefined, apiHost: string | undefined,
-  chatModelId: string, modelTemperature: number, modelMaxTokens: number, abortSignal: AbortSignal,
+  chatModelId: string, modelTemperature: number, modelMaxResponseTokens: number, abortSignal: AbortSignal,
   addMessage: (conversationId: string, message: DMessage) => void,
   editMessage: (conversationId: string, messageId: string, updatedMessage: Partial<DMessage>, touch: boolean) => void,
 ) {
@@ -58,7 +58,7 @@ async function _streamAssistantResponseMessage(
       content: text,
     })),
     temperature: modelTemperature,
-    max_tokens: modelMaxTokens,
+    max_tokens: modelMaxResponseTokens,
   };
 
   try {
@@ -153,9 +153,9 @@ export function Chat(props: { onShowSettings: () => void, sx?: SxProps }) {
     const controller = new AbortController();
     setAbortController(controller);
 
-    const { apiKey, modelTemperature, modelMaxTokens, modelApiHost } = useSettingsStore.getState();
+    const { apiKey, modelTemperature, modelMaxResponseTokens, modelApiHost } = useSettingsStore.getState();
     const { appendMessage, editMessage } = useChatStore.getState();
-    await _streamAssistantResponseMessage(conversationId, history, apiKey, modelApiHost, chatModelId, modelTemperature, modelMaxTokens, controller.signal, appendMessage, editMessage);
+    await _streamAssistantResponseMessage(conversationId, history, apiKey, modelApiHost, chatModelId, modelTemperature, modelMaxResponseTokens, controller.signal, appendMessage, editMessage);
 
     // clear to send, again
     setAbortController(null);
@@ -234,7 +234,7 @@ export function Chat(props: { onShowSettings: () => void, sx?: SxProps }) {
 
 
       {/* Confirmation for Export */}
-      <ConfirmationDialog
+      <ConfirmationModal
         open={!!exportConfirmationId} onClose={() => setExportConfirmationId(null)} onPositive={handleConfirmedExportConversation}
         confirmationText={<>
           Share your conversation anonymously on <Link href='https://paste.gg' target='_blank'>paste.gg</Link>?
@@ -244,14 +244,14 @@ export function Chat(props: { onShowSettings: () => void, sx?: SxProps }) {
       />
 
       {/* Confirmation for Delete */}
-      <ConfirmationDialog
+      <ConfirmationModal
         open={!!clearConfirmationId} onClose={() => setClearConfirmationId(null)} onPositive={handleConfirmedClearConversation}
         confirmationText={'Are you sure you want to discard all the messages?'} positiveActionText={'Clear conversation'}
       />
 
       {/* Show the link/key from a chat Export */}
       {!!exportResponse && (
-        <ExportResultDialog open onClose={() => setExportResponse(null)} response={exportResponse} />
+        <ExportOutcomeDialog open onClose={() => setExportResponse(null)} response={exportResponse} />
       )}
 
     </Stack>
