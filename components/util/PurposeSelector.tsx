@@ -38,6 +38,7 @@ export function PurposeSelector() {
 
   //calculate total pages based on total filtered purposes
   const totalPages = Math.ceil(filteredSystemPurposes.length / itemsPerPage);
+  
   // Calculate the paged list of purposes
   const pagedSystemPurposes = React.useMemo(() => {
     const start = (page - 1) * itemsPerPage;
@@ -117,10 +118,13 @@ export function PurposeSelector() {
         )}
         {/* Pagination */}
         {totalPages > 1 && (
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
             <Button disabled={page === 1} onClick={handlePreviousPage} sx={{ mr: 1 }}>
               Previous
             </Button>
+            <Typography level="body2" sx={{ mr: 1 }}>
+              Page {page} of {totalPages}
+            </Typography>
             <Button disabled={page === totalPages} onClick={handleNextPage} sx={{ ml: 1 }}>
               Next
             </Button>
