@@ -10,10 +10,12 @@ import PostAddIcon from '@mui/icons-material/PostAdd';
 import StopOutlinedIcon from '@mui/icons-material/StopOutlined';
 import TelegramIcon from '@mui/icons-material/Telegram';
 
+import { ChatModels } from '@/lib/data';
 import { countModelTokens } from '@/lib/token-counters';
+import { extractPdfText } from '@/lib/pdf';
 import { useActiveConfiguration } from '@/lib/store-chats';
-import { useComposerStore } from '@/lib/store';
-import { useSpeechRecognition } from '@/lib/use-speech-recognition';
+import { useComposerStore, useSettingsStore } from '@/lib/store-settings';
+import { useSpeechRecognition } from '@/components/util/useSpeechRecognition';
 
 
 /// Text template helpers
@@ -53,6 +55,7 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
   // external state
   const { history, appendMessageToHistory } = useComposerStore(state => ({ history: state.history, appendMessageToHistory: state.appendMessageToHistory }), shallow);
   const { chatModelId } = useActiveConfiguration();
+  const modelMaxResponseTokens = useSettingsStore(state => state.modelMaxResponseTokens);
 
 
   const handleSendClicked = () => {
@@ -104,37 +107,48 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
     // e.dataTransfer.dropEffect = 'copy';
   };
 
+  async function loadAndAttachFiles(files: FileList) {
+
+    // perform loading and expansion
+    let text = composeText;
+    for (let file of files) {
+      let fileText = '';
+      try {
+        if (file.type === 'application/pdf')
+          fileText = await extractPdfText(file);
+        else
+          fileText = await file.text();
+        text = expandPromptTemplate(PromptTemplates.PasteFile, { fileName: file.name, fileText })(text);
+      } catch (error) {
+        // show errors in the prompt box itself - FUTURE: show in a toast
+        console.error(error);
+        text = `${text}\n\nError loading file ${file.name}: ${error}\n`;
+      }
+    }
+
+    // update the text
+    setComposeText(text);
+  }
+
   const handleOverlayDrop = async (e: React.DragEvent) => {
     eatDragEvent(e);
     setIsDragging(false);
 
-    // paste Files
-    let text = composeText;
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length) {
-      // Paste all files
-      for (const file of files)
-        text = expandPromptTemplate(PromptTemplates.PasteFile, { fileName: file.name, fileText: await file.text() })(text);
-      setComposeText(text);
-      return;
-    }
+    // dropped files
+    if (e.dataTransfer.files?.length >= 1)
+      return loadAndAttachFiles(e.dataTransfer.files);
 
-    // detect failure of dropping from VSCode
-    if (e.dataTransfer.types.indexOf('codeeditors') >= 0) {
-      setComposeText(text + '\nPasting from VSCode is not supported! Fixme. Anyone?');
-      return;
-    }
+    // special case: detect failure of dropping from VSCode
+    // VSCode: Drag & Drop does not transfer the File object: https://github.com/microsoft/vscode/issues/98629#issuecomment-634475572
+    if ('codeeditors' in e.dataTransfer.types)
+      return setComposeText(test => test + 'Pasting from VSCode is not supported! Fixme. Anyone?');
 
-    // paste Text
+    // dropped text
     const droppedText = e.dataTransfer.getData('text');
-    if (droppedText) {
-      text = expandPromptTemplate(PromptTemplates.PasteText, { clipboard: droppedText })(text);
-      setComposeText(text);
-      return;
-    }
+    if (droppedText?.length >= 1)
+      return setComposeText(text => expandPromptTemplate(PromptTemplates.PasteText, { clipboard: droppedText })(text));
 
-    // NOTE for VSCode - a Drag & Drop does not transfer the File object
-    // https://github.com/microsoft/vscode/issues/98629#issuecomment-634475572
+    // future info for dropping
     console.log('Unhandled Drop event. Contents: ', e.dataTransfer.types.map(t => `${t}: ${e.dataTransfer.getData(t)}`));
   };
 
@@ -142,12 +156,12 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
   const handleOpenFilePicker = () => attachmentFileInputRef.current?.click();
 
   const handleLoadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    let text = composeText;
-    for (let i = 0; i < files.length; i++)
-      text = expandPromptTemplate(PromptTemplates.PasteFile, { fileName: files[i].name, fileText: await files[i].text() })(text);
-    setComposeText(text);
+    const files = e.target?.files;
+    if (files && files.length >= 1)
+      await loadAndAttachFiles(files);
+
+    // this is needed to allow the same file to be selected again
+    e.target.value = '';
   };
 
 
@@ -175,7 +189,13 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
   const hideOnDesktop = { display: { xs: 'flex', md: 'none' } };
 
   // compute tokens (warning: slow - shall have a toggle)
-  const estimatedTokens = countModelTokens(composeText, chatModelId);
+  const modelComposerTokens = countModelTokens(composeText, chatModelId);
+  const modelRestOfChatTokens = 0;
+  const estimatedTokens = modelComposerTokens + modelRestOfChatTokens;
+  const modelContextTokens = ChatModels[chatModelId]?.contextWindowSize || 8192;
+  const remainingTokens = modelContextTokens - estimatedTokens - modelMaxResponseTokens;
+  const tokensString = `model: ${modelContextTokens.toLocaleString()} - chat: ${estimatedTokens.toLocaleString()} - response: ${modelMaxResponseTokens.toLocaleString()} = remaining: ${remainingTokens.toLocaleString()} ${remainingTokens < 0 ? '⚠️' : ''}`;
+  const tokenColor = remainingTokens < 1 ? 'danger' : remainingTokens < modelComposerTokens / 4 ? 'warning' : 'primary';
 
   return (
     <Grid container spacing={{ xs: 1, md: 2 }}>
@@ -222,7 +242,7 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
 
           <Textarea
             variant='soft' autoFocus placeholder={textPlaceholder}
-            minRows={5} maxRows={12}
+            minRows={4} maxRows={12}
             onKeyDown={handleKeyPress}
             onDragEnter={handleMessageDragEnter}
             value={composeText} onChange={(e) => setComposeText(e.target.value)}
@@ -240,8 +260,8 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
 
           <Badge
             size='md' variant='solid' max={65535} showZero={false}
-            color={estimatedTokens >= (8192 - 2048) ? 'danger' : estimatedTokens >= (4097 - 2048) ? 'warning' : 'primary'}
-            badgeContent={estimatedTokens}
+            badgeContent={estimatedTokens > 0 ? <Tooltip title={tokensString} color={tokenColor}><span>{estimatedTokens}</span></Tooltip> : 0}
+            color={tokenColor}
             sx={{
               position: 'absolute', bottom: 8, right: 8,
             }}
