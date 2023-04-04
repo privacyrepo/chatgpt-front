@@ -3,12 +3,15 @@ import { shallow } from 'zustand/shallow';
 
 import { Badge, Box, Button, Card, Grid, IconButton, ListDivider, Menu, MenuItem, Stack, Textarea, Tooltip, Typography } from '@mui/joy';
 import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
+import DataArrayIcon from '@mui/icons-material/DataArray';
+import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import MicIcon from '@mui/icons-material/Mic';
 import PanToolIcon from '@mui/icons-material/PanTool';
-import PostAddIcon from '@mui/icons-material/PostAdd';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import StopOutlinedIcon from '@mui/icons-material/StopOutlined';
 import TelegramIcon from '@mui/icons-material/Telegram';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 import { ChatModels } from '@/lib/data';
 import { countModelTokens } from '@/lib/token-counters';
@@ -33,6 +36,44 @@ const expandPromptTemplate = (template: string, dict: object) => (inputValue: st
     expanded = expanded.replaceAll(`{{${key}}}`, value);
   return expanded;
 };
+
+
+const attachFileLegend =
+  <Stack sx={{ p: 1, gap: 1, fontSize: '16px', fontWeight: 400 }}>
+    <Box sx={{ mb: 1, textAlign: 'center' }}>
+      Attach a file to the message
+    </Box>
+    <table>
+      <tbody>
+      <tr>
+        <td width={36}><PictureAsPdfIcon sx={{ width: 24, height: 24 }} /></td>
+        <td><b>PDF</b></td>
+        <td width={36} align='center' style={{ opacity: 0.5 }}>→</td>
+        <td>📝 Text (split manually)</td>
+      </tr>
+      <tr>
+        <td><DataArrayIcon sx={{ width: 24, height: 24 }} /></td>
+        <td><b>Code</b></td>
+        <td align='center' style={{ opacity: 0.5 }}>→</td>
+        <td>📚 Markdown</td>
+      </tr>
+      <tr>
+        <td><FormatAlignCenterIcon sx={{ width: 24, height: 24 }} /></td>
+        <td><b>Text</b></td>
+        <td align='center' style={{ opacity: 0.5 }}>→</td>
+        <td>📝 As-is</td>
+      </tr>
+      </tbody>
+    </table>
+    <Box sx={{ mt: 1, fontSize: '14px' }}>
+      Drag & drop in chat for faster loads ⚡
+    </Box>
+  </Stack>;
+
+const pasteClipboardLegend =
+  <Box sx={{ p: 1, fontSize: '14px', fontWeight: 400 }}>
+    Converts Code to 📚 Markdown
+  </Box>;
 
 
 /**
@@ -210,24 +251,29 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
 
         {/*<Typography level='body3' sx={{mb: 2}}>{t("composer.context")}</Typography>*/}
 
-        <IconButton variant='plain' color='neutral' onClick={handleOpenFilePicker} sx={{ ...hideOnDesktop }}>
-          <PostAddIcon />
-        </IconButton>
-        <Tooltip title={<> {t("composer.attachFiles", {isDeveloperMode: props.isDeveloperMode})} 👇</>} variant='solid' placement='top-start'>
-          <Button fullWidth variant='plain' color='neutral' onClick={handleOpenFilePicker} startDecorator={<PostAddIcon />}
-                  sx={{ ...hideOnMobile, justifyContent: 'flex-start' }}>
-            {t("composer.attach")}
-          </Button>
-        </Tooltip>
+          <IconButton variant='plain' color='neutral' onClick={handleOpenFilePicker} sx={{ ...hideOnDesktop }}>
+          <UploadFileIcon />
+          </IconButton>
+          <Tooltip title={<> {t("composer.attachFiles", {isDeveloperMode: props.isDeveloperMode})} 👇</>} variant='solid' placement='top-start'>
+            <Button fullWidth variant='plain' color='neutral' onClick={handleOpenFilePicker} startDecorator={<UploadFileIcon />}
+                    sx={{ ...hideOnMobile, justifyContent: 'flex-start' }}>
+               {t("composer.attach")}
+            </Button>
+          </Tooltip>
 
         <Box sx={{ mt: { xs: 1, md: 2 } }} />
 
         <IconButton variant='plain' color='neutral' onClick={pasteFromClipboard} sx={{ ...hideOnDesktop }}>
           <ContentPasteGoIcon />
         </IconButton>
-        <Button fullWidth variant='plain' color='neutral' startDecorator={<ContentPasteGoIcon />} onClick={pasteFromClipboard} sx={{ ...hideOnMobile }}>
-          {props.isDeveloperMode ? t("composer.pasteCode") : t("composer.paste")}
-        </Button>
+          <Tooltip
+            variant='solid' placement='top-start'
+            title={pasteClipboardLegend}>
+          <Button fullWidth variant='plain' color='neutral' startDecorator={<ContentPasteGoIcon />} onClick={pasteFromClipboard}
+                    sx={{ ...hideOnMobile, justifyContent: 'flex-start' }}>
+            {props.isDeveloperMode ? t("composer.pasteCode") : t("composer.paste")}
+          </Button>
+          </Tooltip>
 
         {isSpeechEnabled && <Box sx={{ mt: { xs: 1, md: 2 }, ...hideOnDesktop }}>
           <IconButton variant={!isRecordingSpeech ? 'plain' : 'solid'} color={!isRecordingSpeech ? 'neutral' : 'warning'} onClick={handleMicClicked}>
@@ -260,21 +306,21 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
             lineHeight: 1.75,
           }} />
 
-        <Badge
-          size='md' variant='solid' max={65535} showZero={false}
-          badgeContent={estimatedTokens > 0 ? <Tooltip title={tokensString} color={tokenColor}><span>{estimatedTokens}</span></Tooltip> : 0}
-          color={tokenColor}
-          sx={{
-            position: 'absolute', bottom: 8, right: 8,
-          }}
-          slotProps={{
-            badge: {
-              sx: {
-                position: 'static', transform: 'none',
+          <Badge
+            size='md' variant='solid' max={65535} showZero={false}
+            badgeContent={estimatedTokens > 0 ? <Tooltip title={tokensString} color={tokenColor}><span>{estimatedTokens.toLocaleString()}</span></Tooltip> : 0}
+            color={tokenColor}
+            sx={{
+              position: 'absolute', bottom: 8, right: 8,
+            }}
+            slotProps={{
+              badge: {
+                sx: {
+                  position: 'static', transform: 'none',
+                },
               },
-            },
-          }}
-        />
+            }}
+          />
 
         <Card
           color='primary' invertedColors variant='soft'

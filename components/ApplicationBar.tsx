@@ -1,11 +1,12 @@
 import * as React from 'react';
 
-import { Badge, IconButton, ListDivider, ListItem, ListItemDecorator, Menu, MenuItem, Option, Select, Sheet, Stack, Switch, Typography, useColorScheme } from '@mui/joy';
+import { IconButton, ListDivider, ListItem, ListItemDecorator, Menu, MenuItem, Option, Select, Sheet, Stack, Switch, Typography, useColorScheme } from '@mui/joy';
 import { SxProps } from '@mui/joy/styles/types';
 import AddIcon from '@mui/icons-material/Add';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import LunchDiningIcon from '@mui/icons-material/LunchDining';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -34,6 +35,11 @@ function Dropdown<TValue extends string>(props: { value: TValue, items: Record<s
       value={props.value} onChange={props.onChange}
       indicator={<KeyboardArrowDownIcon />}
       slotProps={{
+        root: {
+          sx: {
+            backgroundColor: 'transparent',
+          },
+        },
         listbox: {
           variant: 'plain', color: 'neutral',
           disablePortal: false,
@@ -135,9 +141,10 @@ function PagesMenu(props: { pagesMenuAnchor: HTMLElement | null, onClose: () => 
 /**
  * The top bar of the application, with the model and purpose selection, and menu/settings icons
  */
-export function ApplicationBar({ onClearConversation, onExportConversation, onShowSettings, sx }: {
+export function ApplicationBar({ onClearConversation, onDownloadConversationJSON, onPublishConversation, onShowSettings, sx }: {
   onClearConversation: (conversationId: (string | null)) => void;
-  onExportConversation: (conversationId: (string | null)) => void;
+  onDownloadConversationJSON: (conversationId: (string | null)) => void;
+  onPublishConversation: (conversationId: (string | null)) => void;
   onShowSettings: () => void;
   sx?: SxProps
 }) {
@@ -176,9 +183,14 @@ export function ApplicationBar({ onClearConversation, onExportConversation, onSh
     closeActionsMenu();
   };
 
-  const handleActionExportChat = (e: React.MouseEvent) => {
+  const handleActionDownloadChatJson = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onExportConversation(null);
+    onDownloadConversationJSON(null);
+  };
+
+  const handleActionPublishChat = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onPublishConversation(null);
   };
 
   const handleActionClearConversation = (e: React.MouseEvent, id: string | null) => {
@@ -261,14 +273,25 @@ export function ApplicationBar({ onClearConversation, onExportConversation, onSh
 
       <ListDivider />
 
-      <MenuItem onClick={handleActionExportChat}>
+      <MenuItem onClick={handleActionDownloadChatJson}>
         <ListItemDecorator>
-          <Badge size='sm' badgeContent='new' color='primary'>
-            <ExitToAppIcon />
-          </Badge>
+          {/*<Badge size='sm' color='danger'>*/}
+          <FileDownloadIcon />
+          {/*</Badge>*/}
+        </ListItemDecorator>
+        Download JSON
+      </MenuItem>
+
+      <MenuItem onClick={handleActionPublishChat}>
+        <ListItemDecorator>
+          {/*<Badge size='sm' color='primary'>*/}
+          <ExitToAppIcon />
+          {/*</Badge>*/}
         </ListItemDecorator>
         {t('applicationBar.shareViaPasteGG')}
       </MenuItem>
+
+      <ListDivider />
 
       <MenuItem onClick={e => handleActionClearConversation(e, null)}>
         <ListItemDecorator><DeleteOutlineIcon /></ListItemDecorator>

@@ -1,6 +1,8 @@
 
 export type SystemPurposeId = string;
 
+export const defaultSystemPurposeId: SystemPurposeId = 'Generic';
+
 type SystemPurposeData = {
   title: string;
   description: string | JSX.Element;
