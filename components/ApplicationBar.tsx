@@ -1,11 +1,12 @@
 import * as React from 'react';
 
-import { Badge, IconButton, ListDivider, ListItem, ListItemDecorator, Menu, MenuItem, Option, Select, Sheet, Stack, Switch, Typography, useColorScheme } from '@mui/joy';
+import { IconButton, ListDivider, ListItem, ListItemDecorator, Menu, MenuItem, Option, Select, Sheet, Stack, Switch, Typography, useColorScheme } from '@mui/joy';
 import { SxProps } from '@mui/joy/styles/types';
 import AddIcon from '@mui/icons-material/Add';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import LunchDiningIcon from '@mui/icons-material/LunchDining';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -20,19 +21,25 @@ import { ChatModelId, ChatModels, SystemPurposeId, SystemPurposes } from '@/lib/
 import { Link } from '@/components/util/Link';
 import { foolsMode } from '@/lib/theme';
 import { useActiveConfiguration, useChatStore, useConversationNames } from '@/lib/store-chats';
-import { useSettingsStore } from '@/lib/store';
+import { useSettingsStore } from '@/lib/store-settings';
 
-
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useTranslation } from 'next-i18next';
 /**
  * A Select component that blends-in nicely (cleaner, easier to the eyes)
  */
-function BeautifulSelect<TValue extends string>(props: { value: TValue, items: Record<string, { title: string }>, onChange: (event: any, value: TValue | null) => void, sx?: SxProps }) {
+function Dropdown<TValue extends string>(props: { value: TValue, items: Record<string, { title: string }>, onChange: (event: any, value: TValue | null) => void, sx?: SxProps }) {
   return (
     <Select
       variant='solid' color='neutral' size='md'
       value={props.value} onChange={props.onChange}
       indicator={<KeyboardArrowDownIcon />}
       slotProps={{
+        root: {
+          sx: {
+            backgroundColor: 'transparent',
+          },
+        },
         listbox: {
           variant: 'plain', color: 'neutral',
           disablePortal: false,
@@ -70,72 +77,74 @@ function PagesMenu(props: { pagesMenuAnchor: HTMLElement | null, onClose: () => 
 
   const handleConversationClicked = (conversationId: string) => setActiveConversation(conversationId);
 
+  const { t } = useTranslation("common");
   return <Menu
-    variant='plain' color='neutral' size='lg' placement='bottom-start' sx={{ minWidth: 280 }}
-    open={!!props.pagesMenuAnchor} anchorEl={props.pagesMenuAnchor} onClose={props.onClose}
-    disablePortal={false}>
+  variant='plain' color='neutral' size='lg' placement='bottom-start' sx={{ minWidth: 280 }}
+  open={!!props.pagesMenuAnchor} anchorEl={props.pagesMenuAnchor} onClose={props.onClose}
+  disablePortal={false}>
 
-    <ListItem>
-      <Typography level='body2'>
-        Active chats
+  <ListItem>
+    <Typography level='body2'>
+      {t('applicationBar.activeChats')}
+    </Typography>
+  </ListItem>
+
+  {conversationNames.map((conversation) => (
+    <MenuItem
+      key={'c-id-' + conversation.id}
+      onClick={() => handleConversationClicked(conversation.id)}
+    >
+
+      <ListItemDecorator>
+        {SystemPurposes[conversation.systemPurposeId]?.symbol || ''}
+      </ListItemDecorator>
+
+      <Typography sx={{ mr: 2 }}>
+        {conversation.name}
       </Typography>
-    </ListItem>
 
-    {conversationNames.map((conversation) => (
-      <MenuItem
-        key={'c-id-' + conversation.id}
-        onClick={() => handleConversationClicked(conversation.id)}
-      >
+      <IconButton
+        variant='soft' color='neutral' sx={{ ml: 'auto' }}
+        onClick={e => props.onClearConversation(e, conversation.id)}>
+        <DeleteOutlineIcon />
+      </IconButton>
 
-        <ListItemDecorator>
-          {SystemPurposes[conversation.systemPurposeId]?.symbol || ''}
-        </ListItemDecorator>
-
-        <Typography sx={{ mr: 2 }}>
-          {conversation.name}
-        </Typography>
-
-        <IconButton
-          variant='soft' color='neutral' sx={{ ml: 'auto' }}
-          onClick={e => props.onClearConversation(e, conversation.id)}>
-          <DeleteOutlineIcon />
-        </IconButton>
-
-      </MenuItem>
-    ))}
-
-    <MenuItem disabled={true}>
-      <ListItemDecorator><AddIcon /></ListItemDecorator>
-      <Typography sx={{ opacity: 0.5 }}>
-        New chat (soon)
-        {/* We need stable Chat and Message IDs, and one final review to the data structure of Conversation for future-proofing */}
-      </Typography>
     </MenuItem>
+  ))}
+
+  <MenuItem disabled={true}>
+    <ListItemDecorator><AddIcon /></ListItemDecorator>
+    <Typography sx={{ opacity: 0.5 }}>
+      {t('applicationBar.newChat')}
+      {/* We need stable Chat and Message IDs, and one final review to the data structure of Conversation for future-proofing */}
+    </Typography>
+  </MenuItem>
 
 
-    <ListItem>
-      <Typography level='body2'>
-        Scratchpad
-      </Typography>
-    </ListItem>
+  <ListItem>
+    <Typography level='body2'>
+      {t('applicationBar.scratchpad')}
+    </Typography>
+  </ListItem>
 
-    <MenuItem>
-      <ListItemDecorator />
-      <Typography sx={{ opacity: 0.5 }}>
-        Feature <Link href='https://github.com/enricoros/nextjs-chatgpt-app/issues/17' target='_blank'>#17</Link>
-      </Typography>
-    </MenuItem>
+  <MenuItem>
+    <ListItemDecorator />
+    <Typography sx={{ opacity: 0.5 }}>
+      {t('applicationBar.feature')} <Link href='' target='_blank'>#17</Link>
+    </Typography>
+  </MenuItem>
 
-  </Menu>;
+</Menu>;
 }
 
 
 /**
  * The top bar of the application, with the model and purpose selection, and menu/settings icons
  */
-export function ApplicationBar({ onClearConversation, onExportConversation, onShowSettings, sx }: {
+export function ApplicationBar({ onClearConversation, onDownloadConversationJSON, onPublishConversation, onShowSettings, sx }: {
   onClearConversation: (conversationId: (string | null)) => void;
-  onExportConversation: (conversationId: (string | null)) => void;
+  onDownloadConversationJSON: (conversationId: (string | null)) => void;
+  onPublishConversation: (conversationId: (string | null)) => void;
   onShowSettings: () => void;
   sx?: SxProps
 }) {
@@ -148,6 +157,7 @@ export function ApplicationBar({ onClearConversation, onExportConversation, onSh
   const { freeScroll, setFreeScroll, setShowSystemMessages, setWideMode, showSystemMessages, wideMode } = useSettingsStore();
   const { chatModelId, setChatModelId, setSystemPurposeId, systemPurposeId } = useActiveConfiguration();
 
+  const { t } = useTranslation('common');
 
   const handleChatModelChange = (event: any, value: ChatModelId | null) => value && setChatModelId(value);
 
@@ -173,9 +183,14 @@ export function ApplicationBar({ onClearConversation, onExportConversation, onSh
     closeActionsMenu();
   };
 
-  const handleActionExportChat = (e: React.MouseEvent) => {
+  const handleActionDownloadChatJson = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onExportConversation(null);
+    onDownloadConversationJSON(null);
+  };
+
+  const handleActionPublishChat = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onPublishConversation(null);
   };
 
   const handleActionClearConversation = (e: React.MouseEvent, id: string | null) => {
@@ -201,10 +216,10 @@ export function ApplicationBar({ onClearConversation, onExportConversation, onSh
 
       <Stack direction='row' sx={{ my: 'auto' }}>
 
-        <BeautifulSelect items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />
+        <Dropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />
 
-        <BeautifulSelect items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
-
+        <Dropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
+        <LanguageSwitcher />
       </Stack>
 
       <IconButton variant='plain' onClick={event => setActionsMenuAnchor(event.currentTarget)}>
@@ -229,49 +244,59 @@ export function ApplicationBar({ onClearConversation, onExportConversation, onSh
 
       <MenuItem>
         <ListItemDecorator><DarkModeIcon /></ListItemDecorator>
-        Dark
+        {t('applicationBar.dark')}
         <Switch checked={colorMode === 'dark'} onChange={handleDarkModeToggle} sx={{ ml: 'auto' }} />
       </MenuItem>
 
       <MenuItem sx={{ display: { xs: 'none', md: 'flex' } }}>
         <ListItemDecorator>{wideMode ? <WidthFullIcon /> : <WidthWideIcon />}</ListItemDecorator>
-        Wide
+        {t('applicationBar.wide')}
         <Switch checked={wideMode} onChange={handleWideModeToggle} sx={{ ml: 'auto' }} />
       </MenuItem>
 
       <MenuItem>
         <ListItemDecorator><SettingsSuggestIcon /></ListItemDecorator>
-        System text
+        {t('applicationBar.systemText')}
         <Switch checked={showSystemMessages} onChange={handleSystemMessagesToggle} sx={{ ml: 'auto' }} />
       </MenuItem>
 
       <MenuItem>
         <ListItemDecorator><SwapVertIcon /></ListItemDecorator>
-        Free scroll
+        {t('applicationBar.freeScroll')}
         <Switch checked={freeScroll} onChange={handleScrollModeToggle} sx={{ ml: 'auto' }} />
       </MenuItem>
 
       <MenuItem onClick={handleActionShowSettings}>
         <ListItemDecorator><SettingsOutlinedIcon /></ListItemDecorator>
-        Settings
+        {t('applicationBar.settings')}
       </MenuItem>
 
       <ListDivider />
 
-      <MenuItem onClick={handleActionExportChat}>
+      <MenuItem onClick={handleActionDownloadChatJson}>
         <ListItemDecorator>
-          <Badge size='sm' badgeContent='new' color='primary'>
-            <ExitToAppIcon />
-          </Badge>
+          {/*<Badge size='sm' color='danger'>*/}
+          <FileDownloadIcon />
+          {/*</Badge>*/}
         </ListItemDecorator>
-        Share via paste.gg
+        Download JSON
       </MenuItem>
+
+      <MenuItem onClick={handleActionPublishChat}>
+        <ListItemDecorator>
+          {/*<Badge size='sm' color='primary'>*/}
+          <ExitToAppIcon />
+          {/*</Badge>*/}
+        </ListItemDecorator>
+        {t('applicationBar.shareViaPasteGG')}
+      </MenuItem>
+
+      <ListDivider />
 
       <MenuItem onClick={e => handleActionClearConversation(e, null)}>
         <ListItemDecorator><DeleteOutlineIcon /></ListItemDecorator>
-        Clear conversation
+        {t('applicationBar.clearConversation')}
       </MenuItem>
     </Menu>
 
-  </>;
-}
+  </>};

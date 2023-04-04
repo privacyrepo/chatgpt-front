@@ -17,6 +17,8 @@ interface SettingsStore {
   showSystemMessages: boolean;
   setShowSystemMessages: (showSystemMessages: boolean) => void;
 
+  renderMarkdown: boolean;
+  setRenderMarkdown: (renderMarkdown: boolean) => void;
 
   // OpenAI API settings
 
@@ -29,8 +31,8 @@ interface SettingsStore {
   modelTemperature: number;
   setModelTemperature: (modelTemperature: number) => void;
 
-  modelMaxTokens: number;
-  setModelMaxTokens: (modelMaxTokens: number) => void;
+  modelMaxResponseTokens: number;
+  setModelMaxResponseTokens: (modelMaxResponseTokens: number) => void;
 
 }
 
@@ -47,6 +49,9 @@ export const useSettingsStore = create<SettingsStore>()(
       showSystemMessages: false,
       setShowSystemMessages: (showSystemMessages: boolean) => set({ showSystemMessages }),
 
+      renderMarkdown: false,
+      setRenderMarkdown: (renderMarkdown: boolean) => set({ renderMarkdown }),
+
       apiKey: (function() {
         // this will be removed in April
         if (typeof localStorage === 'undefined') return '';
@@ -60,8 +65,8 @@ export const useSettingsStore = create<SettingsStore>()(
       modelTemperature: 0.5,
       setModelTemperature: (modelTemperature: number) => set({ modelTemperature }),
 
-      modelMaxTokens: 2048,
-      setModelMaxTokens: (modelMaxTokens: number) => set({ modelMaxTokens }),
+      modelMaxResponseTokens: 2048,
+      setModelMaxResponseTokens: (modelMaxResponseTokens: number) => set({ modelMaxResponseTokens: modelMaxResponseTokens }),
 
     }),
     {

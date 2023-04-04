@@ -4,10 +4,25 @@ import { Container, useTheme } from '@mui/joy';
 
 import { Chat } from '@/components/Chat';
 import { NoSSR } from '@/components/util/NoSSR';
-import { isValidOpenAIApiKey, SettingsModal } from '@/components/SettingsModal';
-import { useSettingsStore } from '@/lib/store';
+import { isValidOpenAIApiKey, SettingsModal } from '@/components/dialogs/SettingsModal';
+import { useSettingsStore } from '@/lib/store-settings';
+
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
 
 
+export async function getStaticProps({ locale }:any) {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale, [
+        'common',
+        'models',
+        'roles',
+        
+      ])),
+      // Will be passed to the page component as props
+    },
+  }
+}
 export default function Home() {
   // state
   const [settingsShown, setSettingsShown] = React.useState(false);

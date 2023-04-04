@@ -1,0 +1,55 @@
+{
+  "applicationBar": {
+    "activeChats": "Active chats",
+    "newChat": "New chat (soon)",
+    "scratchpad": "Scratchpad",
+    "feature": "Feature",
+    "dark": "Dark",
+    "wide": "Wide",
+    "systemText": "System text",
+    "freeScroll": "Free scroll",
+    "settings": "Settings",
+    "shareViaPasteGG": "Share via paste.gg",
+    "clearConversation": "Clear conversation"
+  },
+  "settingsModal":
+    {
+        "settings": "Settings",
+        "openaiApiKey": "OpenAI API Key {needsApiKey ? '' : '(optional)'}",
+        "required": "required",
+        "createKey": "Create Key",
+        "applyTo": "apply to the",
+        "waitlist": "GPT-4 waitlist",
+        "keyPrecedence": "This key will take precedence over the server's.",
+        "checkUsage": "Check usage here",
+        "userInterface": "User Interface",
+        "markdown": "Markdown",
+        "bestLooks": "Best looks",
+        "rawText": "Raw text",
+        "advancedAISettings": "Advanced AI settings",
+        "disclaimer": "Adjust only if you are familiar with these terms",
+        "temperature": "Temperature",
+        "creativeFreedom": "Creative freedom",
+        "maxTokens": "Max-Tokens",
+        "responseLength": "Response length",
+        "apiHost": "API host",
+        "e.g.": "E.g. for",
+        "close": "Close"
+      },
+      "confirmationModal":{
+        "Confirmation": "Confirmation",
+        "Cancel": "Cancel"
+      },
+  "composer":{
+    "context": "Context",
+    "attachFiles": "Attach code files · also drag-and-drop 👇",
+    "attach": "Attach",
+    "pasteCode": "Paste code",
+    "paste": "Paste",
+    "holdMessage": "I will hold on to this for you",
+    "chat": "Chat",
+    "stop": "Stop",
+    "reuseMessages": "Reuse messages 💬",
+    "clear": "Clear"
+}
+}
