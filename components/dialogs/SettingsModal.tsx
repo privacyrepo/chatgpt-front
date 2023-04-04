@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { shallow } from 'zustand/shallow';
-
+import { useTranslation } from 'next-i18next'
 import { Box, Button, FormControl, FormHelperText, FormLabel, IconButton, Input, Modal, ModalClose, ModalDialog, Slider, Stack, Switch, Typography } from '@mui/joy';
 import KeyIcon from '@mui/icons-material/Key';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -61,6 +61,8 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
     modelMaxResponseTokens: state.modelMaxResponseTokens, setModelMaxResponseTokens: state.setModelMaxResponseTokens,
     modelApiHost: state.modelApiHost, setModelApiHost: state.setModelApiHost,
   }), shallow);
+  
+  const { t } = useTranslation('common')
 
   const handleApiKeyChange = (e: React.ChangeEvent) =>
     setApiKey((e.target as HTMLInputElement).value);
@@ -84,14 +86,14 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
       <ModalDialog sx={{ maxWidth: 500, display: 'flex' }}>
         <ModalClose />
 
-        <Typography level='h5'>Settings</Typography>
+        <Typography level='h5'>{t('settingsModal.settings')}</Typography>
 
 
         <Section>
 
           <FormControl>
             <FormLabel>
-              OpenAI API Key {needsApiKey ? '' : '(optional)'}
+            {t('settingsModal.openaiApiKey')} {needsApiKey ? '' : '(optional)'}
             </FormLabel>
             <Input
               variant='outlined' type='password' placeholder={needsApiKey ? 'required' : 'sk-...'} error={needsApiKey && !isValidKey}
@@ -100,22 +102,21 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
             />
             <FormHelperText sx={{ display: 'block', lineHeight: 1.75 }}>
               {needsApiKey
-                ? <><Link level='body2' href='https://platform.openai.com/account/api-keys' target='_blank'>Create Key</Link>, then apply to
-                  the <Link level='body2' href='https://openai.com/waitlist/gpt-4-api' target='_blank'>GPT-4 waitlist</Link></>
-                : `This key will take precedence over the server's.`} <Link level='body2' href='https://platform.openai.com/account/usage' target='_blank'>Check usage here</Link>.
+                ? <><Link level='body2' href='https://platform.openai.com/account/api-keys' target='_blank'>{t('settingsModal.createKey')}</Link>, {t('settingsModal.applyTo')} <Link level='body2' href='https://openai.com/waitlist/gpt-4-api' target='_blank'>{t('settingsModal.waitlist')}</Link></>
+                : `${t('settingsModal.keyPrecedence')}`} <Link level='body2' href='https://platform.openai.com/account/usage' target='_blank'>{t('settingsModal.checkUsage')}</Link>.
             </FormHelperText>
           </FormControl>
 
         </Section>
 
 
-        <Section title={'User Interface'}>
+        <Section title={t('settingsModal.userInterface')!}>
           <Stack direction='column' sx={{ gap: 2, maxWidth: 400 }}>
 
             <FormControl orientation='horizontal' sx={{ justifyContent: 'space-between' }}>
               <Box>
-                <FormLabel>Markdown</FormLabel>
-                <FormHelperText>{renderMarkdown ? 'Best looks' : 'Raw text'}</FormHelperText>
+                <FormLabel>{t('settingsModal.markdown')}</FormLabel>
+                <FormHelperText>{renderMarkdown ? t('settingsModal.bestLooks') : t('settingsModal.rawText')}</FormHelperText>
               </Box>
               <Switch checked={renderMarkdown} onChange={handleRenderMarkdownChange}
                       endDecorator={renderMarkdown ? 'On' : 'Off'}
@@ -128,13 +129,13 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
 
         {/* Advanced Settings */}
 
-        <Section title='Advanced AI settings' collapsible collapsed={true} disclaimer='Adjust only if you are familiar with these terms'>
+        <Section title={t('settingsModal.advancedAISettings')!} collapsible collapsed={true} disclaimer={t('settingsModal.disclaimer')!}>
           <Stack direction='column' sx={{ gap: 1, mt: -0.8, maxWidth: 400 }}>
 
             <FormControl orientation='horizontal' sx={{ justifyContent: 'space-between' }}>
               <Box sx={{ minWidth: 140 }}>
-                <FormLabel>Temperature</FormLabel>
-                <FormHelperText>Creative freedom</FormHelperText>
+                <FormLabel>{t('settingsModal.temperature')}</FormLabel>
+                <FormHelperText>{t('settingsModal.creativeFreedom')}</FormHelperText>
               </Box>
               <Slider
                 aria-label='Model Temperature' color='neutral'
@@ -147,8 +148,8 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
 
             <FormControl orientation='horizontal' sx={{ justifyContent: 'space-between' }}>
               <Box sx={{ minWidth: 140 }}>
-                <FormLabel>Max-Tokens</FormLabel>
-                <FormHelperText>Response length</FormHelperText>
+                <FormLabel>{t('settingsModal.maxTokens')}</FormLabel>
+                <FormHelperText>{t('settingsModal.responseLength')}</FormHelperText>
               </Box>
               <Slider
                 aria-label='Model Temperature' color='neutral'
@@ -162,7 +163,7 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
             <FormControl orientation='horizontal' sx={{ justifyContent: 'space-between' }}>
               <Box sx={{ minWidth: 140 }}>
                 <FormLabel>
-                  API host
+                {t('settingsModal.apiHost')}
                   {/*<Tooltip title='Change API host for compatibility with services like Helicone' variant='solid'>*/}
                   {/*  <InfoIcon sx={{ ml: 1, cursor: 'pointer' }} />*/}
                   {/*</Tooltip>*/}
@@ -183,7 +184,7 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
 
         <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
           <Button variant='solid' color={isValidKey ? 'primary' : 'neutral'} onClick={onClose}>
-            Close
+          {t('settingsModal.close')}
           </Button>
         </Box>
 

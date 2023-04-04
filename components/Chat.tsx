@@ -73,7 +73,7 @@ async function _streamAssistantResponseMessage(
     if (response.body) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
-      console.log(history);
+
       // loop forever until the read is done, or the abort controller is triggered
       let incrementalText = '';
       let parsedFirstPacket = false;
