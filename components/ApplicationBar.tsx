@@ -22,7 +22,8 @@ import { foolsMode } from '@/lib/theme';
 import { useActiveConfiguration, useChatStore, useConversationNames } from '@/lib/store-chats';
 import { useSettingsStore } from '@/lib/store-settings';
 
-import { useTranslation } from 'next-i18next'
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useTranslation } from 'next-i18next';
 /**
  * A Select component that blends-in nicely (cleaner, easier to the eyes)
  */
@@ -206,7 +207,7 @@ export function ApplicationBar({ onClearConversation, onExportConversation, onSh
         <Dropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />
 
         <Dropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
-
+        <LanguageSwitcher />
       </Stack>
 
       <IconButton variant='plain' onClick={event => setActionsMenuAnchor(event.currentTarget)}>
