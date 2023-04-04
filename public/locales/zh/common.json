@@ -1,0 +1,56 @@
+
+{
+    "applicationBar": {
+      "activeChats": "正在进行的聊天",
+      "newChat": "新聊天（即将推出）",
+      "scratchpad": "草稿",
+      "feature": "特性",
+      "dark": "暗色模式",
+      "wide": "宽屏模式",
+      "systemText": "系统文本",
+      "freeScroll": "自由滚动",
+      "settings": "设置",
+      "shareViaPasteGG": "通过paste.gg分享",
+      "clearConversation": "清除聊天记录"
+    },
+    "settingsModal":
+      {
+          "settings": "设置",
+          "openaiApiKey": "OpenAI API密钥",
+          "required": "必填",
+          "createKey": "创建密钥",
+          "applyTo": "应用于",
+          "waitlist": "GPT-4等待列表",
+          "keyPrecedence": "此密钥将优先于服务器的密钥。",
+          "checkUsage": "在此处检查使用情况",
+          "userInterface": "用户界面",
+          "markdown": "Markdown",
+          "bestLooks": "最佳外观",
+          "rawText": "纯文本",
+          "advancedAISettings": "高级AI设置",
+          "disclaimer": "仅在您熟悉这些条款的情况下进行调整",
+          "temperature": "温度",
+          "creativeFreedom": "创造自由",
+          "maxTokens": "最大标记数",
+          "responseLength": "响应长度",
+          "apiHost": "API主机",
+          "e.g.": "例如",
+          "close": "关闭"
+        },
+        "confirmationModal":{
+          "Confirmation": "确认",
+          "Cancel": "取消"
+        },
+    "composer":{
+      "context": "上下文",
+      "attachFiles": "附加代码文件·也可以拖放👇",
+      "attach": "附件",
+      "pasteCode": "粘贴代码",
+      "paste": "粘贴",
+      "holdMessage": "我会为您保留此消息",
+      "chat": "聊天",
+      "stop": "停止",
+      "reuseMessages": "重复使用消息💬",
+      "clear": "清除"
+    }
+  }
