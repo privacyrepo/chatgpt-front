@@ -5,6 +5,7 @@ import { Input } from '@mui/material';
 import { useActiveConfiguration } from '@/lib/store-chats';
 import { SystemPurposeId, SystemPurposes } from '@/lib/data';
 
+import { useTranslation, UseTranslation } from 'next-i18next';
 /**
  * Purpose selector for the current chat. Clicking on any item activates it for the current chat.
  */
@@ -18,6 +19,8 @@ export function PurposeSelector() {
   //items per page
   const itemsPerPage = 16;
 
+  const {t} = useTranslation('roles');
+  
   const handlePurposeChange = (purpose: SystemPurposeId | null) => {
     if (purpose) setSystemPurposeId(purpose);
   };
