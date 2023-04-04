@@ -27,6 +27,7 @@
         "bestLooks": "Best looks",
         "rawText": "Raw text",
         "advancedAISettings": "Advanced AI settings",
+        "disclaimer": "Adjust only if you are familiar with these terms",
         "temperature": "Temperature",
         "creativeFreedom": "Creative freedom",
         "maxTokens": "Max-Tokens",
