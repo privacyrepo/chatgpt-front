@@ -1,13 +1,12 @@
 import * as React from 'react';
 
-import { IconButton, ListDivider, ListItem, ListItemDecorator, Menu, MenuItem, Option, Select, Sheet, Stack, Switch, Typography, useColorScheme } from '@mui/joy';
+import { IconButton, ListDivider, ListItem, ListItemDecorator, Menu, MenuItem, Sheet, Stack, Switch, Typography, useColorScheme } from '@mui/joy';
 import { SxProps } from '@mui/joy/styles/types';
 import AddIcon from '@mui/icons-material/Add';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import LunchDiningIcon from '@mui/icons-material/LunchDining';
 import MenuIcon from '@mui/icons-material/Menu';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -17,6 +16,7 @@ import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { ChatModelId, ChatModels, SystemPurposeId, SystemPurposes } from '@/lib/data';
 import { Link } from '@/components/util/Link';
+import { StyledDropdown } from '@/components/util/StyledDropdown';
 import { foolsMode } from '@/lib/theme';
 import { shallow } from 'zustand/shallow';
 import { useActiveConfiguration, useChatStore, useConversationNames } from '@/lib/store-chats';
@@ -203,7 +203,7 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
 
     {/* Top Bar with 2 icons and Model/Purpose selectors */}
     <Sheet
-      variant='solid' invertedColors
+      variant='solid' color='neutral' invertedColors
       sx={{
         p: 1,
         display: 'flex', flexDirection: 'row', justifyContent: 'space-between',
@@ -216,9 +216,9 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
 
       <Stack direction='row' sx={{ my: 'auto' }}>
 
-        <Dropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />
+        <StyledDropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />
 
-        <Dropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
+        <StyledDropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
         <LanguageSwitcher />
       </Stack>
 

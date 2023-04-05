@@ -156,7 +156,7 @@ const RenderMarkdown = ({ textBlock, sx }: { textBlock: TextBlock, sx?: SxProps 
       minWidth: '200%',
       overflowX: 'auto',
       display: 'block',
-    }
+    },
   }}>
     <ReactMarkdown remarkPlugins={[remarkGfm]}>{textBlock.content}</ReactMarkdown>
   </Typography>;
@@ -189,7 +189,7 @@ function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: str
       errorMessage = <>
         Your API key appears to be unauthorized for {modelId || 'this model'}. You can change to <b>GPT-3.5 Turbo</b>
         and simultaneously <Link noLinkStyle href='https://openai.com/waitlist/gpt-4-api' target='_blank'>request
-          access</Link> to the desired model.
+        access</Link> to the desired model.
       </>;
     } else if (text.includes('"context_length_exceeded"')) {
       // TODO: propose to summarize or split the input?
@@ -246,6 +246,7 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
 
   // external state
   const theme = useTheme();
+  const showAvatars = useSettingsStore(state => state.zenMode) !== 'cleaner';
   const renderMarkdown = useSettingsStore(state => state.renderMarkdown) && !fromSystem;
 
   const closeOperationsMenu = () => setMenuAnchor(null);
@@ -299,26 +300,27 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
 
 
   // theming
-  let background = theme.vars.palette.background.body;
-  let textBackground: string | undefined = undefined;
+  let background = theme.vars.palette.background.surface;
   switch (messageRole) {
     case 'system':
-      // background = theme.vars.palette.background.body;
-      // textBackground = wasEdited ? theme.vars.palette.warning.plainHoverBg : theme.vars.palette.neutral.plainHoverBg;
-      background = wasEdited ? theme.vars.palette.warning.plainHoverBg : theme.vars.palette.background.popup;
+      if (wasEdited)
+        background = theme.vars.palette.warning.plainHoverBg;
       break;
     case 'user':
-      background = theme.vars.palette.primary.plainHoverBg;
+      background = theme.vars.palette.primary.plainHoverBg; // .background.level1
       break;
     case 'assistant':
-      background = (isAssistantError && !errorMessage) ? theme.vars.palette.danger.softBg : theme.vars.palette.background.body;
+      if (isAssistantError && !errorMessage)
+        background = theme.vars.palette.danger.softBg;
       break;
   }
 
 
   // avatar
-  const avatarEl: JSX.Element = React.useMemo(
+  const avatarEl: JSX.Element | null = React.useMemo(
     () => {
+      if (!showAvatars)
+        return null;
       if (typeof messageAvatar === 'string' && messageAvatar)
         return <Avatar alt={messageSender} src={messageAvatar} />;
       switch (messageRole) {
@@ -341,17 +343,18 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
           return <Face6Icon sx={{ width: 40, height: 40 }} />;            // https://www.svgrepo.com/show/306500/openai.svg
       }
       return <Avatar alt={messageSender} />;
-    }, [messageAvatar, messageRole, messageSender, messageTyping],
+    }, [messageAvatar, messageRole, messageSender, messageTyping, showAvatars],
   );
 
   // text box css
-  const blocksFontCss = {
+  const cssBlocks = {
     my: 'auto',
   };
-  const textFontCss = {
+  const cssText = {
     lineHeight: 1.75,
   };
-  const codeFontCss = {
+  const cssCode = {
+    background: theme.vars.palette.background.level1,
     fontFamily: theme.fontFamily.code,
     fontSize: '14px',
     fontVariantLigatures: 'none',
@@ -375,14 +378,14 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
       display: 'flex', flexDirection: !fromAssistant ? 'row-reverse' : 'row', alignItems: 'flex-start',
       gap: 1, px: { xs: 1, md: 2 }, py: 2,
       background,
-      borderBottom: '1px solid',
-      borderBottomColor: `rgba(${theme.vars.palette.neutral.mainChannel} / 0.2)`,
+      borderBottom: `1px solid ${theme.vars.palette.divider}`,
+      // borderBottomColor: `rgba(${theme.vars.palette.neutral.mainChannel} / 0.2)`,
       position: 'relative',
       '&:hover > button': { opacity: 1 },
     }}>
 
-      {/* Author */}
-      <Stack
+      {/* Avatar */}
+      {showAvatars && <Stack
         sx={{ alignItems: 'center', minWidth: { xs: 50, md: 64 }, textAlign: 'center' }}
         onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}
         onClick={event => setMenuAnchor(event.currentTarget)}>
@@ -406,22 +409,22 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
           </Tooltip>
         )}
 
-      </Stack>
+      </Stack>}
 
 
       {/* Edit / Blocks */}
       {!isEditing ? (
 
-        <Box sx={{ ...blocksFontCss, flexGrow: 0, whiteSpace: 'break-spaces' }} onDoubleClick={handleMenuEdit}>
+        <Box sx={{ ...cssBlocks, flexGrow: 0, whiteSpace: 'break-spaces' }} onDoubleClick={handleMenuEdit}>
 
           {fromSystem && wasEdited && <Typography level='body2' color='warning' sx={{ mt: 1, mx: 1.5 }}>modified by user - auto-update disabled</Typography>}
 
           {parseBlocks(fromSystem, collapsedText).map((block, index) =>
             block.type === 'code'
-              ? <RenderCode key={'code-' + index} codeBlock={block} sx={{ ...codeFontCss, background: theme.vars.palette.background.level1 }} />
+              ? <RenderCode key={'code-' + index} codeBlock={block} sx={cssCode} />
               : renderMarkdown
-                ? <RenderMarkdown key={'text-md-' + index} textBlock={block} sx={textBackground ? { ...textFontCss, background: textBackground } : textFontCss} />
-                : <RenderText key={'text-' + index} textBlock={block} sx={textBackground ? { ...textFontCss, background: textBackground } : textFontCss} />,
+                ? <RenderMarkdown key={'text-md-' + index} textBlock={block} sx={cssText} />
+                : <RenderText key={'text-' + index} textBlock={block} sx={cssText} />,
           )}
 
           {errorMessage && <Alert variant='soft' color='warning' sx={{ mt: 1 }}><Typography>{errorMessage}</Typography></Alert>}
@@ -435,7 +438,7 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
         <Textarea
           variant='soft' color='warning' autoFocus minRows={1}
           value={editedText} onChange={handleEditTextChanged} onKeyDown={handleEditKeyPressed} onBlur={handleEditBlur}
-          sx={{ ...blocksFontCss, flexGrow: 1 }} />
+          sx={{ ...cssBlocks, flexGrow: 1 }} />
 
       )}
 
