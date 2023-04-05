@@ -300,7 +300,7 @@ export function Composer(props: { disableSend: boolean; isDeveloperMode: boolean
             <UploadFileIcon />
           </IconButton>
           <Tooltip title={<> {t("composer.attachFiles", {isDeveloperMode: props.isDeveloperMode})} 👇</>} variant='solid' placement='top-start'>
-            <Button fullWidth variant='plain' color='neutral' onClick={handleOpenFilePicker} startDecorator={<UploadFileIcon />}
+            <Button fullWidth variant='plain' color='neutral' onClick={handleShowFilePicker} startDecorator={<UploadFileIcon />}
                     sx={{ ...hideOnMobile, justifyContent: 'flex-start' }}>
                {t("composer.attach")}
             </Button>
