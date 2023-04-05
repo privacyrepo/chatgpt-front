@@ -248,11 +248,6 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
         <Switch checked={colorMode === 'dark'} onChange={handleDarkModeToggle} sx={{ ml: 'auto' }} />
       </MenuItem>
 
-      <MenuItem sx={{ display: { xs: 'none', md: 'flex' } }}>
-        <ListItemDecorator>{wideMode ? <WidthFullIcon /> : <WidthWideIcon />}</ListItemDecorator>
-        {t('applicationBar.wide')}
-        <Switch checked={wideMode} onChange={handleWideModeToggle} sx={{ ml: 'auto' }} />
-      </MenuItem>
 
       <MenuItem>
         <ListItemDecorator><SettingsSuggestIcon /></ListItemDecorator>
