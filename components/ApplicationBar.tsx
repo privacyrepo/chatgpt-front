@@ -1,3 +1,4 @@
+"use client";
 import * as React from 'react';
 
 import { IconButton, ListDivider, ListItem, ListItemDecorator, Menu, MenuItem, Sheet, Stack, Switch, Typography, useColorScheme } from '@mui/joy';
@@ -14,7 +15,7 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
-import { ChatModelId, ChatModels, SystemPurposeId, SystemPurposes } from '@/lib/data';
+import { LocaleId, Locales,ChatModelId, ChatModels, SystemPurposeId, SystemPurposes } from '@/lib/data';
 import { Link } from '@/components/util/Link';
 import { StyledDropdown } from '@/components/util/StyledDropdown';
 import { foolsMode } from '@/lib/theme';
@@ -22,49 +23,9 @@ import { shallow } from 'zustand/shallow';
 import { useActiveConfiguration, useChatStore, useConversationNames } from '@/lib/store-chats';
 import { useSettingsStore } from '@/lib/store-settings';
 
-import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useTranslation } from 'next-i18next';
-/**
- * A Select component that blends-in nicely (cleaner, easier to the eyes)
- */
-function Dropdown<TValue extends string>(props: { value: TValue, items: Record<string, { title: string }>, onChange: (event: any, value: TValue | null) => void, sx?: SxProps }) {
-  return (
-    <Select
-      variant='solid' color='neutral' size='md'
-      value={props.value} onChange={props.onChange}
-      indicator={<KeyboardArrowDownIcon />}
-      slotProps={{
-        root: {
-          sx: {
-            backgroundColor: 'transparent',
-          },
-        },
-        listbox: {
-          variant: 'plain', color: 'neutral',
-          disablePortal: false,
-        },
-        indicator: {
-          sx: {
-            opacity: 0.5,
-          },
-        },
-      }}
-      sx={{
-        mx: 0,
-        /*fontFamily: theme.vars.fontFamily.code,*/
-        fontWeight: 500,
-        ...(props.sx || {}),
-      }}
-    >
-      {Object.keys(props.items).map((key: string) => (
-        <Option key={key} value={key}>
-          {props.items[key].title}
-        </Option>
-      ))}
-    </Select>
-  );
-}
 
+import {  useRouter } from "next/router";
 /**
  * FIXME - TEMPORARY - placeholder for a proper Pages Drawer
  */
@@ -157,14 +118,29 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
     freeScroll: state.freeScroll, setFreeScroll: state.setFreeScroll,
     showSystemMessages: state.showSystemMessages, setShowSystemMessages: state.setShowSystemMessages,
   }), shallow);
-  const { chatModelId, setChatModelId, setSystemPurposeId, systemPurposeId } = useActiveConfiguration();
+  const { localeId, setLocaleId, chatModelId, setChatModelId, setSystemPurposeId, systemPurposeId } = useActiveConfiguration();
 
   const { t } = useTranslation('common');
+  const router = useRouter();
 
   const handleChatModelChange = (event: any, value: ChatModelId | null) => value && setChatModelId(value);
 
   const handleSystemPurposeChange = (event: any, value: SystemPurposeId | null) => value && setSystemPurposeId(value);
 
+  const handleLocaleChange = (event: any, value: LocaleId | null) => {
+    value && setLocaleId(value)
+
+
+    const currentPath = router.asPath.replace(new RegExp(`^/${router.locale}`), '');
+
+    const newLocale = `/${value?.split('-')[0]}`
+
+      // Navigate to the new URL with the new locale
+    router.push(currentPath, `${newLocale}${currentPath}`, { locale: false });
+  
+
+
+  };
 
   const closePagesMenu = () => setPagesMenuAnchor(null);
 
@@ -219,7 +195,9 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
         <StyledDropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />
 
         <StyledDropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
-        <LanguageSwitcher />
+
+        <StyledDropdown items={Locales} value={localeId} onChange={handleLocaleChange} />
+
       </Stack>
 
       <IconButton variant='plain' onClick={event => setActionsMenuAnchor(event.currentTarget)}>

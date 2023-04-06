@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 
-import { ChatModelId, defaultChatModelId, defaultSystemPurposeId, SystemPurposeId } from '@/lib/data';
+import { LocaleId, defaultLocaleId, ChatModelId, defaultChatModelId, defaultSystemPurposeId, SystemPurposeId } from '@/lib/data';
 
 
 /// Conversations Store
@@ -22,6 +22,7 @@ export interface ChatStore {
   deleteMessage: (conversationId: string, messageId: string) => void;
   editMessage: (conversationId: string, messageId: string, updatedMessage: Partial<DMessage>, touch: boolean) => void;
   setChatModelId: (conversationId: string, chatModelId: ChatModelId) => void;
+  setLocaleId:(conversationId: string, localeId: LocaleId) => void;
   setSystemPurposeId: (conversationId: string, systemPurposeId: SystemPurposeId) => void;
 
   // utility function
@@ -66,6 +67,7 @@ export interface DConversation {
   messages: DMessage[];
   systemPurposeId: SystemPurposeId;
   chatModelId: ChatModelId;
+  localeId: LocaleId;
   userTitle?: string;
   autoTitle?: string;
   cacheTokensCount?: number;
@@ -73,12 +75,12 @@ export interface DConversation {
   updated: number | null;     // updated timestamp
 }
 
-const createConversation = (id: string, name: string, systemPurposeId: SystemPurposeId, chatModelId: ChatModelId): DConversation =>
-  ({ id, name, messages: [], systemPurposeId, chatModelId, created: Date.now(), updated: Date.now() });
+const createConversation = (id: string, name: string, systemPurposeId: SystemPurposeId, chatModelId: ChatModelId, localeId: LocaleId): DConversation =>
+  ({ id, name, messages: [], systemPurposeId, chatModelId, localeId,created: Date.now(), updated: Date.now() });
 
-const defaultConversations: DConversation[] = [createConversation('default', 'Conversation', defaultSystemPurposeId, defaultChatModelId)];
+const defaultConversations: DConversation[] = [createConversation('default', 'Conversation', defaultSystemPurposeId, defaultChatModelId, defaultLocaleId)];
 
-const errorConversation: DConversation = createConversation('error-missing', 'Missing Conversation', defaultSystemPurposeId, defaultChatModelId);
+const errorConversation: DConversation = createConversation('error-missing', 'Missing Conversation', defaultSystemPurposeId, defaultChatModelId, defaultLocaleId);
 
 
 export const useChatStore = create<ChatStore>()(devtools(
@@ -165,6 +167,12 @@ export const useChatStore = create<ChatStore>()(devtools(
           };
         }),
 
+        setLocaleId: (conversationId: string, localeId: LocaleId) =>
+        get()._editConversation(conversationId,
+          {
+            localeId,
+          }),
+
       setChatModelId: (conversationId: string, chatModelId: ChatModelId) =>
         get()._editConversation(conversationId,
           {
@@ -208,11 +216,13 @@ export function useActiveConversation(): DConversation {
 }
 
 export function useActiveConfiguration() {
-  const { conversationId, chatModelId, setChatModelId, systemPurposeId, setSystemPurposeId } = useChatStore(state => {
+  const { conversationId, localeId, setLocaleId, chatModelId, setChatModelId, systemPurposeId, setSystemPurposeId } = useChatStore(state => {
     const _activeConversationId = state.activeConversationId;
     const conversation = state.conversations.find(conversation => conversation.id === _activeConversationId) || errorConversation;
     return {
       conversationId: conversation.id,
+      localeId: conversation.localeId,
+      setLocaleId: state.setLocaleId,
       chatModelId: conversation.chatModelId,
       setChatModelId: state.setChatModelId,
       systemPurposeId: conversation.systemPurposeId,
@@ -222,6 +232,8 @@ export function useActiveConfiguration() {
 
   return {
     conversationId,
+    localeId,
+    setLocaleId:(localeId: LocaleId) => setLocaleId(conversationId, localeId),
     chatModelId,
     setChatModelId: (chatModelId: ChatModelId) => setChatModelId(conversationId, chatModelId),
     systemPurposeId,

@@ -304,3 +304,91 @@ export const ChatModels: { [key in ChatModelId]: ChatModelData } = {
     contextWindowSize: 4096,
   },
 };
+
+export type LocaleId = 'en-US' | 'zh-CN'| 'fr-FR' | 'es-ES';
+
+export const defaultLocaleId: LocaleId = 'zh-CN';
+
+type LocaleData = {
+  title: string;
+  dateFormat: string;
+  timeFormat: string;
+  numberFormat: Intl.NumberFormatOptions;
+  currencyFormat: Intl.NumberFormatOptions;
+  flagIcon: string;
+};
+
+export const Locales: { [key in LocaleId]: LocaleData } = {
+  'en-US': {
+    title: '🇺🇸 English (US)',
+    dateFormat: 'MM/dd/yyyy',
+    timeFormat: 'h:mm a',
+    numberFormat: {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    },
+    currencyFormat: {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    },
+    flagIcon: '🇺🇸',
+  },
+  'zh-CN': {
+    title: '🇨🇳 简体中文 (中国)',
+    dateFormat: 'yyyy/MM/dd',
+    timeFormat: 'H:mm',
+    numberFormat: {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    },
+    currencyFormat: {
+      style: 'currency',
+      currency: 'CNY',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    },
+    flagIcon: '🇨🇳',
+  },
+  'fr-FR': {
+    title: '🇫🇷 Français (France)',
+    dateFormat: 'dd/MM/yyyy',
+    timeFormat: 'HH:mm',
+    numberFormat: {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    },
+    currencyFormat: {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    },
+    flagIcon: '🇫🇷',
+  },
+  'es-ES': {
+    title: '🇪🇸 Español (España)',
+    dateFormat: 'dd/MM/yyyy',
+    timeFormat: 'h:mm a',
+    numberFormat: {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    },
+    currencyFormat: {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    },
+    flagIcon: '🇪🇸',
+  },
+};
