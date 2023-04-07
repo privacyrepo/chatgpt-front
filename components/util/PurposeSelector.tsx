@@ -3,9 +3,11 @@ import * as React from 'react';
 import { AspectRatio, Box, Button, Grid, Stack, Textarea, Typography, useTheme } from '@mui/joy';
 import { Input } from '@mui/material';
 import { useActiveConfiguration } from '@/lib/store-chats';
-import { SystemPurposeId, SystemPurposes } from '@/lib/data';
-
-import { useTranslation, UseTranslation } from 'next-i18next';
+import { SystemPurposeId } from '@/lib/data';
+import { useTranslation } from 'next-i18next';
+import { useEffect } from 'react';
+import router from 'next/router';
+import { PurposeLoader, SystemPurposes } from './PurposeLoader';
 /**
  * Purpose selector for the current chat. Clicking on any item activates it for the current chat.
  */
@@ -35,7 +37,7 @@ export function PurposeSelector() {
   // Filter the list of purposes based on the search term and current page
   const filteredSystemPurposes = React.useMemo(() => {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return Object.keys(SystemPurposes)
+    return Object?.keys(SystemPurposes)
       .filter((spId) => SystemPurposes[spId as SystemPurposeId].title.toLowerCase().includes(lowerCaseSearchTerm))
       .sort((a, b) => SystemPurposes[a as SystemPurposeId].title.localeCompare(SystemPurposes[b as SystemPurposeId].title));
   }, [searchTerm]);
@@ -58,6 +60,12 @@ export function PurposeSelector() {
     setPage((prevPage) => prevPage + 1);
   };
 
+  useEffect(() => {
+    const locale = router.locale ?? router.defaultLocale;
+    console.log(locale)
+    PurposeLoader(locale ?? '');
+  }, [router.locale]);
+  
   return (
     <Stack direction="column" sx={{ justifyContent: 'center', alignItems: 'center', mx: 2, minHeight: '60vh' }}>
       <Box>
@@ -104,7 +112,7 @@ export function PurposeSelector() {
         </Grid>
 
         <Typography level="body2" sx={{ mt: 2 }}>
-          {SystemPurposes[systemPurposeId].description}
+          {SystemPurposes[systemPurposeId]?.description}
         </Typography>
 
         {systemPurposeId === 'Custom' && (
