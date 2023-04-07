@@ -5,7 +5,7 @@ import { Input } from '@mui/material';
 import { useActiveConfiguration } from '@/lib/store-chats';
 import { SystemPurposeId, SystemPurposes } from '@/lib/data';
 
-import { useTranslation, UseTranslation } from 'next-i18next';
+import { useTranslation} from 'next-i18next';
 /**
  * Purpose selector for the current chat. Clicking on any item activates it for the current chat.
  */
