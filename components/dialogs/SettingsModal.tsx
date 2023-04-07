@@ -123,7 +123,7 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
 
             <FormControl orientation='horizontal' sx={{ ...hideOnMobile, alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <FormLabel>Centering</FormLabel>
+                <FormLabel>{t('settingsModal.centering')}</FormLabel>
                 <FormHelperText>{centerMode === 'full' ? 'Full screen' : centerMode === 'narrow' ? 'Narrow' : 'Wide'} chat</FormHelperText>
               </Box>
               <RadioGroup orientation='horizontal' value={centerMode} onChange={handleCenterModeChange}>
@@ -135,8 +135,8 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
 
             <FormControl orientation='horizontal' sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <FormLabel>Visual Clutter</FormLabel>
-                <FormHelperText>{zenMode === 'clean' ? 'Show senders' : 'Hide sender and menus'}</FormHelperText>
+                <FormLabel>{t('settingsModal.visualClutter')}</FormLabel>
+                <FormHelperText>{zenMode === 'clean' ? `${t('settingsModal.showSenders')}` : `${t('settingsModal.hideSenderAndMenu')}`}</FormHelperText>
               </Box>
               <RadioGroup orientation='horizontal' value={zenMode} onChange={handleZenModeChange}>
                 {/*<Radio value='clean' label={<Face6Icon sx={{ width: 24, height: 24, mt: -0.25 }} />} />*/}
