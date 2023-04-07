@@ -80,7 +80,7 @@ export function PurposeSelector() {
         <Typography level="body3" color="neutral" sx={{ mb: 2 }}>
           AI purpose
         </Typography>
-
+        <Input placeholder="Search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} sx={{ mt: 2, mb: 4, minWidth: '200px' }} />
         <Grid container spacing={tileSpacing} sx={{ justifyContent: 'flex-start' }}>
           {pagedSystemPurposes.map((spId) => (
             <Grid key={spId}>
