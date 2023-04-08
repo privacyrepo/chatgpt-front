@@ -1,11 +1,14 @@
 import * as React from 'react';
 
-import { Box, Button, Grid, Stack, Textarea, Typography, useTheme } from '@mui/joy';
-import { Input } from '@mui/material';
-import { useActiveConfiguration } from '@/lib/store-chats';
+import { Box, Button, Grid, IconButton, Input, Stack, Textarea, Typography, useTheme } from '@mui/joy';
+import { Input } from '@mui/material';import ClearIcon from '@mui/icons-material/Clear';
+import SearchIcon from '@mui/icons-material/Search';
+
 import { SystemPurposeId, SystemPurposes } from '@/lib/data';
 
 import { useTranslation } from 'next-i18next';
+import { useActiveConfiguration } from '@/lib/store-chats';
+import { useSettingsStore } from '@/lib/store-settings';
 
 
 // Constants for tile sizes / grid width - breakpoints need to be computed here to work around
@@ -26,20 +29,51 @@ const bpTileGap = { xs: 2, md: 3 };
  * Purpose selector for the current chat. Clicking on any item activates it for the current chat.
  */
 export function PurposeSelector() {
+  // state
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [filteredIDs, setFilteredIDs] = React.useState<SystemPurposeId[] | null>(null);
+
   // external state
   const theme = useTheme();
-  const { setSystemPurposeId, systemPurposeId } = useActiveConfiguration();
-  //use for search filter
-  const [searchTerm, setSearchTerm] = React.useState('');
-  //current page number for pagination
-  const [page, setPage] = React.useState(1);
-  //items per page
-  const itemsPerPage = 16;
+  const showPurposeFinder = useSettingsStore(state => state.showPurposeFinder);
+  const { systemPurposeId, setSystemPurposeId } = useActiveConfiguration();
 
-  const {t} = useTranslation('roles');
-  
-  const handlePurposeChange = (purpose: SystemPurposeId | null) => {
-    if (purpose) setSystemPurposeId(purpose);
+
+  const handleSearchClear = () => {
+    setSearchQuery('');
+    setFilteredIDs(null);
+  };
+
+  const handleSearchOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    if (!query)
+      return handleSearchClear();
+    setSearchQuery(query);
+
+    // Filter results based on search term
+    const ids = Object.keys(SystemPurposes)
+      .filter(key => SystemPurposes.hasOwnProperty(key))
+      .filter(key => {
+        const purpose = SystemPurposes[key as SystemPurposeId];
+        return purpose.title.toLowerCase().includes(query.toLowerCase())
+          || (typeof purpose.description === 'string' && purpose.description.toLowerCase().includes(query.toLowerCase()));
+      });
+    setFilteredIDs(ids as SystemPurposeId[]);
+
+    // If there's a search term, activate the first item
+    if (ids.length && !ids.includes(systemPurposeId))
+      handlePurposeChanged(ids[0] as SystemPurposeId);
+  };
+
+  const handleSearchOnKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key == 'Escape')
+      handleSearchClear();
+  };
+
+
+  const handlePurposeChanged = (purpose: SystemPurposeId | null) => {
+    if (purpose)
+      setSystemPurposeId(purpose);
   };
 
   const handleCustomSystemMessageChange = (v: React.ChangeEvent<HTMLTextAreaElement>): void => {
@@ -74,20 +108,45 @@ export function PurposeSelector() {
     setPage((prevPage) => prevPage + 1);
   };
 
-  return (
-    <Stack direction="column" sx={{ minHeight: '60vh', justifyContent: 'center', alignItems: 'center' }}>
+  // we show them all if the filter is clear (null)
+  const purposeIDs = (filteredIDs && showPurposeFinder) ? filteredIDs : Object.keys(SystemPurposes);
+
+  return <>
+
+    {showPurposeFinder && <Box sx={{ p: 2 * tileSpacing }}>
+      <Input
+        fullWidth
+        variant='outlined' color='neutral'
+        value={searchQuery} onChange={handleSearchOnChange}
+        onKeyDown={handleSearchOnKeyDown}
+        placeholder='Search for purpose…'
+        startDecorator={<SearchIcon />}
+        endDecorator={searchQuery && (
+          <IconButton variant='plain' color='neutral' onClick={handleSearchClear}>
+            <ClearIcon />
+          </IconButton>
+        )}
+        sx={{
+          boxShadow: theme.vars.shadow.sm,
+        }}
+      />
+    </Box>}
+
+    <Stack direction='column' sx={{ minHeight: '60vh', justifyContent: 'center', alignItems: 'center' }}>
+
       <Box sx={{ maxWidth: bpMaxWidth }}>
-        <Typography level="body3" color="neutral" sx={{ mb: 2 }}>
-          AI purpose
+
+        <Typography level='body3' color='neutral' sx={{ mb: 2 }}>
+          Select an AI purpose
         </Typography>
         <Input placeholder="Search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} sx={{ mt: 2, mb: 4, minWidth: '200px' }} />
         <Grid container spacing={tileSpacing} sx={{ justifyContent: 'flex-start' }}>
-          {pagedSystemPurposes.map((spId) => (
+          {purposeIDs.map((spId) => (
             <Grid key={spId}>
               <Button
                 variant={systemPurposeId === spId ? 'solid' : 'soft'}
                 color={systemPurposeId === spId ? 'primary' : 'neutral'}
-                onClick={() => handlePurposeChange(spId as SystemPurposeId)}
+                onClick={() => handlePurposeChanged(spId as SystemPurposeId)}
                 sx={{
                   flexDirection: 'column',
                   fontWeight: 500,
@@ -112,12 +171,12 @@ export function PurposeSelector() {
         </Grid>
 
         <Typography level='body2' sx={{ mt: 2 }}>
-          {SystemPurposes[systemPurposeId]?.description}
+          {purposeIDs.length > 0 ? SystemPurposes[systemPurposeId]?.description : 'Oops! No AI purposes found for your search.'}
         </Typography>
 
         {systemPurposeId === 'Custom' && (
           <Textarea
-            variant='outlined' autoFocus placeholder={'Enter your custom system message here...'}
+            variant='outlined' autoFocus placeholder={'Craft your custom system message here…'}
             minRows={3}
             defaultValue={SystemPurposes['Custom']?.systemMessage} onChange={handleCustomSystemMessageChange}
             sx={{
@@ -149,5 +208,6 @@ export function PurposeSelector() {
         )}
       </Box>
     </Stack>
-  );
+
+  </>;
 }
