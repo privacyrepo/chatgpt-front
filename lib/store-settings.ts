@@ -55,10 +55,10 @@ export const useSettingsStore = create<SettingsStore>()(
       freeScroll: false,
       setFreeScroll: (freeScroll: boolean) => set({ freeScroll }),
 
-      renderMarkdown: false,
+      renderMarkdown: true,
       setRenderMarkdown: (renderMarkdown: boolean) => set({ renderMarkdown }),
 
-      showPurposeFinder: false,
+      showPurposeFinder: true,
       setShowPurposeFinder: (showPurposeFinder: boolean) => set({ showPurposeFinder }),
 
       showSystemMessages: false,

@@ -92,7 +92,7 @@ export interface DConversation {
 }
 
 const createConversation = (id: string, name: string, systemPurposeId: SystemPurposeId, chatModelId: ChatModelId, localeId: LocaleId): DConversation =>
-  ({ id, name, messages: [], systemPurposeId, chatModelId,localeId, tokenCount: 0, localeId,created: Date.now(), updated: Date.now() });
+  ({ id, name, messages: [], systemPurposeId, chatModelId,localeId, tokenCount: 0, created: Date.now(), updated: Date.now() });
 
 const defaultConversations: DConversation[] = [createConversation(uuidv4(), 'Conversation', defaultSystemPurposeId, defaultChatModelId, defaultLocaleId)];
 
