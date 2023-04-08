@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { i18n} from 'next-i18next';
 
 
 // definition for OpenAI wire types
@@ -44,7 +45,7 @@ export default async function handler(): Promise<NextResponse> {
   const apiHost = process.env.OPENAI_API_HOST || 'api.openai.com';
 
   if (!apiKey) {
-    return new NextResponse('[Issue] missing OpenAI API Key. Add it on the server side (your deployment).', { status: 400 });
+    return new NextResponse(i18n?.t('models.missingApiKey'), { status: 400 });
   }
 
   try {
@@ -58,7 +59,7 @@ export default async function handler(): Promise<NextResponse> {
 
     return new NextResponse(JSON.stringify(response));
   } catch (error) {
-    return new NextResponse('[Issue] Failed to fetch models.', { status: 500 });
+    return new NextResponse(i18n?.t('models.fetchFailed'), { status: 500 });
   }
 }
 

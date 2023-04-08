@@ -1,56 +1,77 @@
-
 {
-    "applicationBar": {
-      "activeChats": "正在进行的聊天",
-      "newChat": "新聊天（即将推出）",
-      "scratchpad": "草稿",
-      "feature": "特性",
-      "dark": "暗色模式",
-      "wide": "宽屏模式",
-      "systemText": "系统文本",
-      "freeScroll": "自由滚动",
-      "settings": "设置",
-      "shareViaPasteGG": "通过paste.gg分享",
-      "clearConversation": "清除聊天记录"
-    },
-    "settingsModal":
-      {
-          "settings": "设置",
-          "openaiApiKey": "OpenAI API密钥",
-          "required": "必填",
-          "createKey": "创建密钥",
-          "applyTo": "应用于",
-          "waitlist": "GPT-4等待列表",
-          "keyPrecedence": "此密钥将优先于服务器的密钥。",
-          "checkUsage": "在此处检查使用情况",
-          "userInterface": "用户界面",
-          "markdown": "Markdown",
-          "bestLooks": "最佳外观",
-          "rawText": "纯文本",
-          "advancedAISettings": "高级AI设置",
-          "disclaimer": "仅在您熟悉这些条款的情况下进行调整",
-          "temperature": "温度",
-          "creativeFreedom": "创造自由",
-          "maxTokens": "最大标记数",
-          "responseLength": "响应长度",
-          "apiHost": "API主机",
-          "e.g.": "例如",
-          "close": "关闭"
-        },
-        "confirmationModal":{
-          "Confirmation": "确认",
-          "Cancel": "取消"
-        },
-    "composer":{
-      "context": "上下文",
-      "attachFiles": "附加代码文件·也可以拖放👇",
-      "attach": "附件",
-      "pasteCode": "粘贴代码",
-      "paste": "粘贴",
-      "holdMessage": "我会为您保留此消息",
-      "chat": "聊天",
-      "stop": "停止",
-      "reuseMessages": "重复使用消息💬",
-      "clear": "清除"
-    }
+  "applicationBar": {
+    "activeChats": "正在进行的聊天",
+    "newChat": "新聊天（即将推出）",
+    "scratchpad": "草稿",
+    "feature": "特性",
+    "dark": "暗色模式",
+    "wide": "宽屏模式",
+    "systemText": "系统文本",
+    "freeScroll": "自由滚动",
+    "settings": "设置",
+    "shareViaPasteGG": "通过paste.gg分享",
+    "clearConversation": "清除聊天记录"
+  },
+  "settingsModal": {
+    "settings": "设置",
+    "openaiApiKey": "OpenAI API密钥",
+    "required": "必填",
+    "createKey": "创建密钥",
+    "applyTo": "应用于",
+    "waitlist": "GPT-4等待列表",
+    "keyPrecedence": "此密钥将优先于服务器的密钥。",
+    "checkUsage": "在此处检查使用情况",
+    "userInterface": "用户界面",
+    "markdown": "Markdown",
+    "bestLooks": "最佳外观",
+    "rawText": "纯文本",
+    "advancedAISettings": "高级AI设置",
+    "disclaimer": "仅在您熟悉这些条款的情况下进行调整",
+    "temperature": "温度",
+    "creativeFreedom": "创造自由",
+    "maxTokens": "最大标记数",
+    "responseLength": "响应长度",
+    "apiHost": "API主机",
+    "e.g.": "例如",
+    "close": "关闭"
+  },
+  "confirmationModal": {
+    "Confirmation": "确认",
+    "Cancel": "取消"
+  },
+  "composer": {
+    "context": "上下文",
+    "attachFiles": "附加代码文件·也可以拖放👇",
+    "attach": "附件",
+    "pasteCode": "粘贴代码",
+    "paste": "粘贴",
+    "holdMessage": "我会为您保留此消息",
+    "chat": "聊天",
+    "stop": "停止",
+    "reuseMessages": "重复使用消息💬",
+    "clear": "清除"
+  },
+  "chatMessage": {
+    "modelOccupied": "该模型目前似乎正在使用中。请尝试选择 GPT-3.5 Turbo 或从消息菜单中选择“再次运行”。",
+    "unauthorizedApiKey": "您的 API 密钥似乎未被授权访问 '此模型'。您可以切换到 GPT-3.5 Turbo 并同时请求访问所需的模型。",
+    "contextExceeded": "此线程超出了此模型允许的最大大小。请考虑从对话中删除一些较早的消息，开始一个新的对话，选择具有更大上下文的模型或提交较短的新消息。",
+    "invalidApiKey": "API 密钥似乎不正确或已过期。请检查您的 API 密钥并在“设置”菜单中进行更新。",
+    "isAssistantError": "是否为助手错误",
+    "copy": "复制",
+    "edit": "编辑",
+    "discard": "放弃",
+    "doubleClick": "双击",
+    "runAgain": "再次运行",
+    "delete": "删除"
+  },
+  "models": {
+    "missingApiKey": "[问题] 缺少OpenAI API密钥。请在服务器端（您的部署）上添加它。",
+    "fetchFailed": "[问题] 获取模型失败。"
+  },
+  "streamChat": {
+    "missingApiKey": "[问题] 缺少 OpenAI API 密钥。请在客户端（设置图标）或服务器端（您的部署）添加。",
+    "abortedByUser": "请求被用户中止。",
+    "resetByClient": "连接被客户端重置。",
+    "fetchFailed": "[问题] 获取请求失败。"
   }
+}

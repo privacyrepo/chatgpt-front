@@ -12,35 +12,34 @@
     "shareViaPasteGG": "Share via paste.gg",
     "clearConversation": "Clear conversation"
   },
-  "settingsModal":
-    {
-        "settings": "Settings",
-        "openaiApiKey": "OpenAI API Key {needsApiKey ? '' : '(optional)'}",
-        "required": "required",
-        "createKey": "Create Key",
-        "applyTo": "apply to the",
-        "waitlist": "GPT-4 waitlist",
-        "keyPrecedence": "This key will take precedence over the server's.",
-        "checkUsage": "Check usage here",
-        "userInterface": "User Interface",
-        "markdown": "Markdown",
-        "bestLooks": "Best looks",
-        "rawText": "Raw text",
-        "advancedAISettings": "Advanced AI settings",
-        "disclaimer": "Adjust only if you are familiar with these terms",
-        "temperature": "Temperature",
-        "creativeFreedom": "Creative freedom",
-        "maxTokens": "Max-Tokens",
-        "responseLength": "Response length",
-        "apiHost": "API host",
-        "e.g.": "E.g. for",
-        "close": "Close"
-      },
-      "confirmationModal":{
-        "Confirmation": "Confirmation",
-        "Cancel": "Cancel"
-      },
-  "composer":{
+  "settingsModal": {
+    "settings": "Settings",
+    "openaiApiKey": "OpenAI API Key {needsApiKey ? '' : '(optional)'}",
+    "required": "required",
+    "createKey": "Create Key",
+    "applyTo": "apply to the",
+    "waitlist": "GPT-4 waitlist",
+    "keyPrecedence": "This key will take precedence over the server's.",
+    "checkUsage": "Check usage here",
+    "userInterface": "User Interface",
+    "markdown": "Markdown",
+    "bestLooks": "Best looks",
+    "rawText": "Raw text",
+    "advancedAISettings": "Advanced AI settings",
+    "disclaimer": "Adjust only if you are familiar with these terms",
+    "temperature": "Temperature",
+    "creativeFreedom": "Creative freedom",
+    "maxTokens": "Max-Tokens",
+    "responseLength": "Response length",
+    "apiHost": "API host",
+    "e.g.": "E.g. for",
+    "close": "Close"
+  },
+  "confirmationModal": {
+    "Confirmation": "Confirmation",
+    "Cancel": "Cancel"
+  },
+  "composer": {
     "context": "Context",
     "attachFiles": "Attach code files · also drag-and-drop 👇",
     "attach": "Attach",
@@ -51,5 +50,28 @@
     "stop": "Stop",
     "reuseMessages": "Reuse messages 💬",
     "clear": "Clear"
-}
+  },
+  "chatMessage": {
+    "modelOccupied": "The model appears to be occupied at the moment. Kindly select GPT-3.5 Turbo, or give it another go by selecting Run again from the message menu.",
+    "unauthorizedApiKey": "Your API key appears to be unauthorized for  'this model'. You can change to GPT-3.5 Turbo and simultaneously request access to the desired model.",
+    "contextExceeded": "This thread surpasses the maximum size allowed for this model. Please consider removing some earlier messages from the conversation, start a new conversation, choose a model with larger context, or submit a shorter new message.",
+    "invalidApiKey": "The API key appears to not be correct or to have expired. Please check your API key and update it in the Settings menu.",
+    "isAssistantError": "Is Assistant Error",
+    "copy": "Copy",
+    "edit": "Edit",
+    "discard": "Discard",
+    "doubleClick": "double-click",
+    "runAgain": "Run Again",
+    "delete": "Delete"
+  },
+  "models": {
+    "missingApiKey": "[Issue] missing OpenAI API Key. Add it on the client side (Settings icon) or server side (your deployment).",
+    "fetchFailed": "[Issue] Failed to fetch models."
+  },
+  "streamChat": {
+    "missingApiKey": "[Issue] missing OpenAI API Key. Add it on the client side (Settings icon) or server side (your deployment).",
+    "abortedByUser": "Request aborted by the user.",
+    "resetByClient": "Connection reset by the client.",
+    "fetchFailed": "[Issue] Fetch request failed."
+  }
 }

@@ -31,6 +31,7 @@ import { prettyBaseModel } from '@/lib/publish';
 import { useSettingsStore } from '@/lib/store-settings';
 
 
+import { i18n, useTranslation } from 'next-i18next';
 /// Utilities to parse messages into blocks of text and code
 
 type Block = TextBlock | CodeBlock;
@@ -174,22 +175,26 @@ function copyToClipboard(text: string) {
       .catch((err) => console.error('Failed to copy message: ', err));
 }
 
+export function useTranslate() {
+  const { t } = useTranslation('common');
+  return t;
+}
 function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: string) {
+
+  
+  i18n?.init();
   let errorMessage: JSX.Element | null = null;
   const isAssistantError = isAssistant && (text.startsWith('[Issue] ') || text.startsWith('[OpenAI Issue]'));
   if (isAssistantError) {
     if (text.startsWith('OpenAI API error: 429 Too Many Requests')) {
       // TODO: retry at the api/chat level a few times instead of showing this error
       errorMessage = <>
-        The model appears to be occupied at the moment. Kindly select <b>GPT-3.5 Turbo</b>,
-        or give it another go by selecting <b>Run again</b> from the message menu.
+         {i18n?.t('chatMessage.modelOccupied')}
       </>;
     } else if (text.includes('"model_not_found"')) {
       // note that "model_not_found" is different than "The model `gpt-xyz` does not exist" message
       errorMessage = <>
-        Your API key appears to be unauthorized for {modelId || 'this model'}. You can change to <b>GPT-3.5
-        Turbo</b> and simultaneously <Link noLinkStyle href='https://openai.com/waitlist/gpt-4-api' target='_blank'>request
-        access</Link> to the desired model.
+         {i18n?.t('chatMessage.unauthorizedApiKey')}
       </>;
     } else if (text.includes('"context_length_exceeded"')) {
       // TODO: propose to summarize or split the input?
@@ -197,15 +202,11 @@ function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: str
       const match = pattern.exec(text);
       const usedText = match ? ` (${match[2]} tokens, max ${match[1]})` : '';
       errorMessage = <>
-        This thread <b>surpasses the maximum size</b> allowed for {modelId || 'this model'}{usedText}.
-        Please consider removing some earlier messages from the conversation, start a new conversation,
-        choose a model with larger context, or submit a shorter new message.
+        {i18n?.t('chatMessage.contextExceeded')}
       </>;
     } else if (text.includes('"invalid_api_key"')) {
       errorMessage = <>
-        The API key appears to not be correct or to have expired.
-        Please <Link noLinkStyle href='https://openai.com/account/api-keys' target='_blank'>check your API key</Link> and
-        update it in the <b>Settings</b> menu.
+         {i18n?.t('chatMessage.invalidApiKey')}
       </>;
     }
   }
@@ -236,6 +237,8 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
   const fromSystem = messageRole === 'system';
   const fromUser = messageRole === 'user';
   const wasEdited = !!messageUpdated;
+
+  const{t} = useTranslation('common');
 
   // state
   const [forceExpanded, setForceExpanded] = React.useState(false);
@@ -296,9 +299,11 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
 
 
   // soft error handling
-  const { isAssistantError, errorMessage } = explainErrorInMessage(messageText, fromAssistant, messageModelId);
-
-
+  const [isAssistantError, errorMessage] = React.useMemo(() => {
+    const { isAssistantError, errorMessage } = explainErrorInMessage(messageText, fromAssistant, messageModelId);
+    return [isAssistantError, errorMessage];
+  }, [messageText, fromAssistant, messageModelId]);
+  
   // theming
   let background = theme.vars.palette.background.surface;
   switch (messageRole) {
@@ -471,21 +476,21 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
           open anchorEl={menuAnchor} onClose={closeOperationsMenu}>
           <MenuItem onClick={handleMenuCopy}>
             <ListItemDecorator><ContentCopyIcon /></ListItemDecorator>
-            Copy
+            {t('chatMessage.copy')}
           </MenuItem>
           <MenuItem onClick={handleMenuEdit}>
             <ListItemDecorator><EditIcon /></ListItemDecorator>
-            {isEditing ? 'Discard' : 'Edit'}
-            {!isEditing && <span style={{ opacity: 0.5, marginLeft: '8px' }}> (double-click)</span>}
+            {isEditing ? t('chatMessage.discard') : t('chatMessage.edit')}
+            {!isEditing && <span style={{ opacity: 0.5, marginLeft: '8px' }}> ( {t('chatMessage.doubleClick')})</span>}
           </MenuItem>
           <ListDivider />
           <MenuItem onClick={handleMenuRunAgain} disabled={!fromUser || props.disableSend}>
             <ListItemDecorator><FastForwardIcon /></ListItemDecorator>
-            Run again
+            {t('chatMessage.runAgain')}
           </MenuItem>
           <MenuItem onClick={props.onDelete} disabled={false /*fromSystem*/}>
             <ListItemDecorator><ClearIcon /></ListItemDecorator>
-            Delete
+            {t('chatMessage.delete')}
           </MenuItem>
         </Menu>
       )}
