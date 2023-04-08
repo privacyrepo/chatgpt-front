@@ -1,9 +1,9 @@
 "use client";
 import * as React from 'react';
+import { shallow } from 'zustand/shallow';
 
-import { IconButton, ListDivider, ListItem, ListItemDecorator, Menu, MenuItem, Sheet, Stack, Switch, Typography, useColorScheme } from '@mui/joy';
+import { IconButton, ListDivider, ListItemDecorator, Menu, MenuItem, Sheet, Stack, Switch, useColorScheme } from '@mui/joy';
 import { SxProps } from '@mui/joy/styles/types';
-import AddIcon from '@mui/icons-material/Add';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
@@ -15,10 +15,9 @@ import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { LocaleId, Locales,ChatModelId, ChatModels, SystemPurposeId, SystemPurposes } from '@/lib/data';
-import { Link } from '@/components/util/Link';
+import { PagesMenu } from '@/components/Pages';
 import { StyledDropdown } from '@/components/util/StyledDropdown';
-import { shallow } from 'zustand/shallow';
-import { useActiveConfiguration, useChatStore, useConversationNames } from '@/lib/store-chats';
+import { useActiveConfiguration } from '@/lib/store-chats';
 import { useSettingsStore } from '@/lib/store-settings';
 
 import { useTranslation } from 'next-i18next';

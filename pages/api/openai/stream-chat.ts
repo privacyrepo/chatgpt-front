@@ -41,8 +41,7 @@ namespace OpenAIAPI.Chat {
 }
 
 async function fetchOpenAIChatCompletions(
-  apiKey: string,
-  apiHost: string,
+  apiCommon: ApiCommonInputs,
   completionRequest: Omit<OpenAIAPI.Chat.CompletionsRequest, 'stream' | 'n'>,
   signal: AbortSignal,
 ): Promise<Response> {
@@ -52,10 +51,11 @@ async function fetchOpenAIChatCompletions(
     n: 1,
   };
 
-  const response = await fetch(`https://${apiHost}/v1/chat/completions`, {
+  const response = await fetch(`https://${apiCommon.apiHost}/v1/chat/completions`, {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiCommon.apiKey}`,
+      ...(apiCommon.apiOrgId && { 'OpenAI-Organization': apiCommon.apiOrgId }),
     },
     method: 'POST',
     body: JSON.stringify(streamingCompletionRequest),
@@ -82,12 +82,8 @@ const sendErrorAndClose = (controller: ReadableStreamDefaultController, encoder:
   controller.close();
 };
 
-async function chatStreamRepeater(
-  apiKey: string,
-  apiHost: string,
-  payload: Omit<OpenAIAPI.Chat.CompletionsRequest, 'stream' | 'n'>,
-  signal: AbortSignal,
-): Promise<ReadableStream> {
+
+async function chatStreamRepeater(apiCommon: ApiCommonInputs, payload: Omit<OpenAIAPI.Chat.CompletionsRequest, 'stream' | 'n'>, signal: AbortSignal): Promise<ReadableStream> {
   const encoder = new TextEncoder();
 
   // Handle the abort event when the connection is closed by the client
@@ -99,7 +95,7 @@ async function chatStreamRepeater(
 
   let upstreamResponse: Response;
   try {
-    upstreamResponse = await fetchOpenAIChatCompletions(apiKey, apiHost, payload, signal);
+    upstreamResponse = await fetchOpenAIChatCompletions(apiCommon, payload, signal);
   } catch (error: any) {
     console.log(error);
     const message =
@@ -164,14 +160,21 @@ async function chatStreamRepeater(
 
 // Next.js API route
 
-export interface ApiChatInput {
+interface ApiCommonInputs {
   apiKey?: string;
   apiHost?: string;
+  apiOrgId?: string;
+}
+
+export interface ApiChatInput extends ApiCommonInputs {
   model: string;
-  messages: OpenAIAPI.Chat.CompletionMessage[];
+  messages: ApiChatMessage[];
   temperature?: number;
   max_tokens?: number;
 }
+
+export type ApiChatMessage = OpenAIAPI.Chat.CompletionMessage;
+
 
 /**
  * The client will be sent a stream of words. As an extra (an totally optional) 'data channel' we send a
@@ -183,25 +186,25 @@ export interface ApiChatFirstOutput {
 }
 
 export default async function handler(req: NextRequest): Promise<Response> {
-  const { apiKey: userApiKey, apiHost: userApiHost, model, messages, temperature = 0.5, max_tokens = 2048 } = (await req.json()) as ApiChatInput;
+  const {
+    apiKey: userApiKey, apiHost: userApiHost, apiOrgId: userApiOrgId,
+    model, messages,
+    temperature = 0.5, max_tokens = 2048,
+  } = await req.json() as ApiChatInput;
 
-  const apiHost = (userApiHost || process.env.OPENAI_API_HOST || 'api.openai.com').replaceAll('https://', '');
-  const apiKey = userApiKey || process.env.OPENAI_API_KEY || '';
-  i18n?.init();
-  if (!apiKey) return new Response(i18n?.t('streamChat.missingApiKey'), { status: 400 });
+  const apiCommon: ApiCommonInputs = {
+    apiKey: (userApiKey || process.env.OPENAI_API_KEY || '').trim(),
+    apiHost: (userApiHost || process.env.OPENAI_API_HOST || 'api.openai.com').trim().replaceAll('https://', ''),
+    apiOrgId: (userApiOrgId || process.env.OPENAI_API_ORG_ID || '').trim(),
+  };
+  i18n?.init();  if (!apiCommon.apiKey) return new Response(i18n?.t('streamChat.missingApiKey'), { status: 400 });
 
   try {
-    const stream: ReadableStream = await chatStreamRepeater(
-      apiKey,
-      apiHost,
-      {
-        model,
-        messages,
-        temperature,
-        max_tokens,
-      },
-      req.signal,
-    );
+
+    const stream: ReadableStream = await chatStreamRepeater(apiCommon, {
+      model, messages,
+      temperature, max_tokens,
+    }, req.signal);
 
     return new NextResponse(stream);
   } catch (error: any) {

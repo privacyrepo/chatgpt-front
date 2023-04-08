@@ -126,44 +126,54 @@ function RenderCode({ codeBlock, sx }: { codeBlock: CodeBlock, sx?: SxProps }) {
     copyToClipboard(codeBlock.code);
   };
 
-  return <Box component='code' sx={{
-    position: 'relative', ...(sx || {}), mx: 0, p: 1.5,
-    display: 'block', fontWeight: 500,
-    '&:hover > button': { opacity: 1 },
-  }}>
-    <Tooltip title='Copy Code' variant='solid'>
-      <IconButton
-        variant='outlined' color='neutral' onClick={handleCopyToClipboard}
-        sx={{
-          position: 'absolute', top: 0, right: 0, zIndex: 10, p: 0.5,
-          opacity: 0, transition: 'opacity 0.3s',
-        }}>
-        <ContentCopyIcon />
-      </IconButton>
-    </Tooltip>
-    <Box dangerouslySetInnerHTML={{ __html: codeBlock.content }} />
-  </Box>;
+  return (
+    <Box
+      component='code'
+      sx={{
+        position: 'relative', mx: 0, p: 1.5, // this block gets a thicker border
+        display: 'block', fontWeight: 500,
+        whiteSpace: 'break-spaces',
+        '&:hover > button': { opacity: 1 },
+        ...(sx || {}),
+      }}>
+      <Tooltip title='Copy Code' variant='solid'>
+        <IconButton
+          variant='outlined' color='neutral' onClick={handleCopyToClipboard}
+          sx={{
+            position: 'absolute', top: 0, right: 0, zIndex: 10, p: 0.5,
+            opacity: 0, transition: 'opacity 0.3s',
+          }}>
+          <ContentCopyIcon />
+        </IconButton>
+      </Tooltip>
+      <Box dangerouslySetInnerHTML={{ __html: codeBlock.content }} />
+    </Box>
+  );
 }
 
-const RenderMarkdown = ({ textBlock, sx }: { textBlock: TextBlock, sx?: SxProps }) =>
-  <Typography component='span' sx={{
-    ...(sx || {}), mx: 1.5,
-    '& p': { // Add this style override
-      marginBlockStart: 0,
-      marginBlockEnd: 0,
-      maxWidth: '90%',
-    },
-    '& table': { // Add this style override
-      minWidth: '200%',
-      overflowX: 'auto',
-      display: 'block',
-    },
-  }}>
+const RenderMarkdown = ({ textBlock }: { textBlock: TextBlock }) => {
+  const theme = useTheme();
+  return <Box
+    className={`markdown-body ${theme.palette.mode === 'dark' ? 'markdown-body-dark' : 'markdown-body-light'}`}
+    sx={{
+      mx: '12px !important',                                // margin: 1.5 like other blocks
+      '& table': { width: 'inherit !important' },           // un-break auto-width (tables have 'max-content', which overflows)
+      '--color-canvas-default': 'transparent !important',   // remove the default background color
+      fontFamily: `inherit !important`,                     // use the default font family
+      lineHeight: '1.75 !important',                        // line-height: 1.75 like the text block
+    }}>
     <ReactMarkdown remarkPlugins={[remarkGfm]}>{textBlock.content}</ReactMarkdown>
-  </Typography>;
+  </Box>;
+};
 
-const RenderText = ({ textBlock, sx }: { textBlock: TextBlock, sx?: SxProps }) =>
-  <Typography component='span' sx={{ ...(sx || {}), mx: 1.5, overflowWrap: 'anywhere' }}>
+const RenderText = ({ textBlock }: { textBlock: TextBlock }) =>
+  <Typography
+    sx={{
+      lineHeight: 1.75,
+      mx: 1.5,
+      overflowWrap: 'anywhere',
+      whiteSpace: 'break-spaces',
+    }}>
     {textBlock.content}
   </Typography>;
 
@@ -198,9 +208,9 @@ function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: str
       </>;
     } else if (text.includes('"context_length_exceeded"')) {
       // TODO: propose to summarize or split the input?
-      const pattern: RegExp = /maximum context length is (\d+) tokens.+resulted in (\d+) tokens/;
+      const pattern: RegExp = /maximum context length is (\d+) tokens.+you requested (\d+) tokens/;
       const match = pattern.exec(text);
-      const usedText = match ? ` (${match[2]} tokens, max ${match[1]})` : '';
+      const usedText = match ? <b>{parseInt(match[2] || '0').toLocaleString()} tokens &gt; {parseInt(match[1] || '0').toLocaleString()}</b> : '';
       errorMessage = <>
         {i18n?.t('chatMessage.contextExceeded')}
       </>;
@@ -208,7 +218,13 @@ function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: str
       errorMessage = <>
          {i18n?.t('chatMessage.invalidApiKey')}
       </>;
-    }
+    } else if (text.includes('"insufficient_quota"')) {
+      errorMessage = <>
+        The API key appears to have <b>insufficient quota</b>. Please
+        check <Link noLinkStyle href='https://platform.openai.com/account/usage' target='_blank'>your usage</Link> and
+        make sure the usage is under <Link noLinkStyle href='https://platform.openai.com/account/billing/limits' target='_blank'>the limits</Link>.
+      </>;
+    } 
   }
   return { errorMessage, isAssistantError };
 }
@@ -229,8 +245,9 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
     avatar: messageAvatar,
     typing: messageTyping,
     role: messageRole,
-    modelId: messageModelId,
     // purposeId: messagePurposeId,
+    originLLM: messageModelId,
+    tokenCount: messageTokenCount,
     updated: messageUpdated,
   } = props.message;
   const fromAssistant = messageRole === 'assistant';
@@ -355,9 +372,6 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
   const cssBlocks = {
     my: 'auto',
   };
-  const cssText = {
-    lineHeight: 1.75,
-  };
   const cssCode = {
     background: theme.vars.palette.background.level1,
     fontFamily: theme.fontFamily.code,
@@ -420,7 +434,7 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
       {/* Edit / Blocks */}
       {!isEditing ? (
 
-        <Box sx={{ ...cssBlocks, flexGrow: 0, whiteSpace: 'break-spaces' }} onDoubleClick={handleMenuEdit}>
+        <Box sx={{ ...cssBlocks, flexGrow: 0 }} onDoubleClick={handleMenuEdit}>
 
           {fromSystem && wasEdited && (
             <Typography level='body2' color='warning' sx={{ mt: 1, mx: 1.5 }}>modified by user - auto-update disabled</Typography>
@@ -430,8 +444,8 @@ export function ChatMessage(props: { message: DMessage, disableSend: boolean, on
             block.type === 'code'
               ? <RenderCode key={'code-' + index} codeBlock={block} sx={cssCode} />
               : renderMarkdown
-                ? <RenderMarkdown key={'text-md-' + index} textBlock={block} sx={cssText} />
-                : <RenderText key={'text-' + index} textBlock={block} sx={cssText} />,
+                ? <RenderMarkdown key={'text-md-' + index} textBlock={block} />
+                : <RenderText key={'text-' + index} textBlock={block} />,
           )}
 
           {errorMessage && (

@@ -3,120 +3,18 @@ import * as React from 'react';
 import { Box, Stack, useTheme } from '@mui/joy';
 import { SxProps } from '@mui/joy/styles/types';
 
-import { ApiChatInput } from '../pages/api/openai/stream-chat';
 import { ApiPublishResponse } from '../pages/api/publish';
 import { ApplicationBar } from '@/components/ApplicationBar';
 import { ChatMessageList } from '@/components/ChatMessageList';
 import { Composer } from '@/components/Composer';
 import { ConfirmationModal } from '@/components/dialogs/ConfirmationModal';
-import { DMessage, downloadConversationJson, useActiveConfiguration, useChatStore } from '@/lib/store-chats';
-import { PublishedModal } from '@/components/dialogs/PublishedModal';
 import { Link } from '@/components/util/Link';
+import { PublishedModal } from '@/components/dialogs/PublishedModal';
 import { SystemPurposes } from '@/lib/data';
+import { createDMessage, DMessage, downloadConversationJson, useActiveConfiguration, useChatStore } from '@/lib/store-chats';
 import { publishConversation } from '@/lib/publish';
+import { streamAssistantMessageEdits } from '@/lib/ai';
 import { useSettingsStore } from '@/lib/store-settings';
-
-
-function createDMessage(role: DMessage['role'], text: string): DMessage {
-  return {
-    id: Math.random().toString(36).substring(2, 15), // use uuid4 !!
-    text: text,
-    sender: role === 'user' ? 'You' : 'Bot',
-    avatar: null,
-    typing: false,
-    role: role,
-    created: Date.now(),
-    updated: null,
-  };
-}
-
-
-/**
- * Main function to send the chat to the assistant and receive a response (streaming)
- */
-async function _streamAssistantResponseMessage(
-  conversationId: string, history: DMessage[],
-  apiKey: string | undefined, apiHost: string | undefined,
-  chatModelId: string, modelTemperature: number, modelMaxResponseTokens: number, abortSignal: AbortSignal,
-  addMessage: (conversationId: string, message: DMessage) => void,
-  editMessage: (conversationId: string, messageId: string, updatedMessage: Partial<DMessage>, touch: boolean) => void,
-) {
-
-  const assistantMessage: DMessage = createDMessage('assistant', '...');
-  assistantMessage.typing = true;
-  assistantMessage.modelId = chatModelId;
-  assistantMessage.purposeId = history[0].purposeId;
-  addMessage(conversationId, assistantMessage);
-  const messageId = assistantMessage.id;
-
-  const payload: ApiChatInput = {
-    ...(apiKey ? { apiKey } : {}),
-    ...(apiHost ? { apiHost } : {}),
-    model: chatModelId,
-    messages: history.map(({ role, text }) => ({
-      role: role,
-      content: text,
-    })),
-    temperature: modelTemperature,
-    max_tokens: modelMaxResponseTokens,
-  };
-
-  try {
-
-    const response = await fetch('/api/openai/stream-chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: abortSignal,
-    });
-
-    if (response.body) {
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-
-      // loop forever until the read is done, or the abort controller is triggered
-      let incrementalText = '';
-      let parsedFirstPacket = false;
-      while (true) {
-        const { value, done } = await reader.read();
-
-        if (done) break;
-
-        incrementalText += decoder.decode(value);
-
-        // there may be a JSON object at the beginning of the message, which contains the model name (streaming workaround)
-        if (!parsedFirstPacket && incrementalText.startsWith('{')) {
-          const endOfJson = incrementalText.indexOf('}');
-          if (endOfJson > 0) {
-            const json = incrementalText.substring(0, endOfJson + 1);
-            incrementalText = incrementalText.substring(endOfJson + 1);
-            try {
-              const parsed = JSON.parse(json);
-              editMessage(conversationId, messageId, { modelId: parsed.model }, false);
-              parsedFirstPacket = true;
-            } catch (e) {
-              // error parsing JSON, ignore
-              console.log('Error parsing JSON: ' + e);
-            }
-          }
-        }
-
-        editMessage(conversationId, messageId, { text: incrementalText }, false);
-      }
-    }
-
-  } catch (error: any) {
-    if (error?.name === 'AbortError') {
-      // expected, the user clicked the "stop" button
-    } else {
-      // TODO: show an error to the UI
-      console.error('Fetch request error:', error);
-    }
-  }
-
-  // finally, stop the typing animation
-  editMessage(conversationId, messageId, { typing: false }, false);
-}
 
 
 export function Chat(props: { onShowSettings: () => void, sx?: SxProps }) {
@@ -128,10 +26,13 @@ export function Chat(props: { onShowSettings: () => void, sx?: SxProps }) {
 
   // external state
   const theme = useTheme();
-  const setMessages = useChatStore(state => state.setMessages);
   const { conversationId: activeConversationId, chatModelId, systemPurposeId } = useActiveConfiguration();
 
   const runAssistant = async (conversationId: string, history: DMessage[]) => {
+
+    // reference the state editing functions
+    const { appendMessage, editMessage, setMessages } = useChatStore.getState();
+
     // update the purpose of the system message (if not manually edited), and create if needed
     {
       const systemMessageIndex = history.findIndex(m => m.role === 'system');
@@ -144,18 +45,26 @@ export function Chat(props: { onShowSettings: () => void, sx?: SxProps }) {
       }
 
       history.unshift(systemMessage);
+      setMessages(conversationId, history);
     }
 
-    // use the new history
-    setMessages(conversationId, history);
+    // create a blank and 'typing' message for the assistant
+    let assistantMessageId: string;
+    {
+      const assistantMessage: DMessage = createDMessage('assistant', '...');
+      assistantMessage.typing = true;
+      assistantMessage.purposeId = history[0].purposeId;
+      assistantMessage.originLLM = chatModelId;
+      appendMessage(conversationId, assistantMessage);
+      assistantMessageId = assistantMessage.id;
+    }
 
     // when an abort controller is set, the UI switches to the "stop" mode
     const controller = new AbortController();
     setAbortController(controller);
 
-    const { apiKey, modelTemperature, modelMaxResponseTokens, modelApiHost } = useSettingsStore.getState();
-    const { appendMessage, editMessage } = useChatStore.getState();
-    await _streamAssistantResponseMessage(conversationId, history, apiKey, modelApiHost, chatModelId, modelTemperature, modelMaxResponseTokens, controller.signal, appendMessage, editMessage);
+    const { apiKey, apiHost, apiOrganizationId, modelTemperature, modelMaxResponseTokens } = useSettingsStore.getState();
+    await streamAssistantMessageEdits(conversationId, assistantMessageId, history, apiKey, apiHost, apiOrganizationId, chatModelId, modelTemperature, modelMaxResponseTokens, editMessage, controller.signal);
 
     // clear to send, again
     setAbortController(null);
@@ -198,7 +107,8 @@ export function Chat(props: { onShowSettings: () => void, sx?: SxProps }) {
 
   const handleConfirmedClearConversation = () => {
     if (clearConfirmationId) {
-      setMessages(clearConfirmationId, []);
+      handleStopGeneration();
+      useChatStore.getState().setMessages(clearConfirmationId, []);
       setClearConfirmationId(null);
     }
   };
