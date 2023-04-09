@@ -19,6 +19,8 @@ export interface ChatStore {
   setActiveConversationId: (conversationId: string) => void;
 
   // within a conversation
+  startTyping: (conversationId: string, abortController: AbortController | null) => void;
+  stopTyping: (conversationId: string) => void;
   setMessages: (conversationId: string, messages: DMessage[]) => void;
   appendMessage: (conversationId: string, message: DMessage) => void;
   deleteMessage: (conversationId: string, messageId: string) => void;
@@ -86,13 +88,15 @@ export interface DConversation {
   localeId: LocaleId;
   userTitle?: string;
   autoTitle?: string;
-  tokenCount: number;        // f(messages, chatModelId)
-  created: number;            // created timestamp
-  updated: number | null;     // updated timestamp
+  tokenCount: number;                 // f(messages, chatModelId)
+  created: number;                    // created timestamp
+  updated: number | null;             // updated timestamp
+  // Not persisted, used while in-memory, or temporarily by the UI
+  abortController: AbortController | null;
 }
 
 const createConversation = (id: string, name: string, systemPurposeId: SystemPurposeId, chatModelId: ChatModelId, localeId: LocaleId): DConversation =>
-  ({ id, name, messages: [], systemPurposeId, chatModelId,localeId, tokenCount: 0, created: Date.now(), updated: Date.now() });
+  ({ id, name, messages: [], systemPurposeId, chatModelId,localeId, tokenCount: 0, created: Date.now(), updated: Date.now(), abortController: null });
 
 const defaultConversations: DConversation[] = [createConversation(uuidv4(), 'Conversation', defaultSystemPurposeId, defaultChatModelId, defaultLocaleId)];
 
@@ -130,13 +134,29 @@ export const useChatStore = create<ChatStore>()(devtools(
 
       // within a conversation
 
+      startTyping: (conversationId: string, abortController: AbortController | null) =>
+        get()._editConversation(conversationId, () =>
+          ({
+            abortController: abortController,
+          })),
+
+      stopTyping: (conversationId: string) =>
+        get()._editConversation(conversationId, conversation => {
+          conversation.abortController?.abort();
+          return {
+            abortController: null,
+          };
+        }),
+
       setMessages: (conversationId: string, newMessages: DMessage[]) =>
         get()._editConversation(conversationId, conversation => {
-          return ({
+          conversation.abortController?.abort();
+          return {
             messages: newMessages,
             tokenCount: newMessages.reduce((sum, message) => sum + updateTokenCount(message, conversation.chatModelId, false, 'setMessages'), 0),
             updated: Date.now(),
-          });
+            abortController: null,
+          };
         }),
 
       appendMessage: (conversationId: string, message: DMessage) =>
@@ -221,6 +241,22 @@ export const useChatStore = create<ChatStore>()(devtools(
     }),
     {
       name: 'app-chats',
+
+      // omit the transient property from the persisted state
+      partialize: (state) => ({
+        ...state,
+        conversations: state.conversations.map((conversation: DConversation) => {
+          const { abortController, ...rest } = conversation;
+          return rest;
+        }),
+      }),
+
+      // rehydrate the transient property
+      onRehydrateStorage: () => (state) => {
+        if (state)
+          for (const conversation of (state.conversations || []))
+            conversation.abortController = null;
+      },
     }),
   {
     name: 'AppChats',
@@ -237,10 +273,11 @@ export function useActiveConversation(): DConversation {
 }
 
 export function useActiveConfiguration() {
-  const { conversationId, localeId, setLocaleId, chatModelId, setChatModelId, systemPurposeId, setSystemPurposeId, tokenCount } = useChatStore(state => {
+  const { assistantTyping, conversationId, localeId, setLocaleId, chatModelId, setChatModelId, systemPurposeId, setSystemPurposeId, tokenCount } = useChatStore(state => {
     const _activeConversationId = state.activeConversationId;
     const conversation = state.conversations.find(conversation => conversation.id === _activeConversationId) || errorConversation;
     return {
+      assistantTyping: !!conversation.abortController,
       conversationId: conversation.id,
       localeId: conversation.localeId,
       setLocaleId: state.setLocaleId,
@@ -253,6 +290,7 @@ export function useActiveConfiguration() {
   }, shallow);
 
   return {
+    assistantTyping,
     conversationId,
     localeId,
     setLocaleId:(localeId: LocaleId) => setLocaleId(conversationId, localeId),
@@ -262,6 +300,22 @@ export function useActiveConfiguration() {
     setSystemPurposeId: (systemPurposeId: SystemPurposeId) => setSystemPurposeId(conversationId, systemPurposeId),
     tokenCount,
   };
+}
+
+export function useConversationPartial(conversationId: string) {
+  return useChatStore(state => {
+    const conversation = state.conversations.find(conversation => conversation.id === conversationId);
+    if (!conversation) return {
+      assistantTyping: false,
+      chatModelId: 'error' as ChatModelId,
+      tokenCount: 0,
+    };
+    return {
+      assistantTyping: !!conversation.abortController,
+      chatModelId: conversation.chatModelId,
+      tokenCount: conversation.tokenCount,
+    };
+  }, shallow);
 }
 
 export const useConversationNames = (): { id: string, name: string, systemPurposeId: SystemPurposeId }[] =>
