@@ -313,8 +313,7 @@ export function Composer(props: {
         {/* Left pane (buttons and Textarea) */}
         <Grid xs={12} md={9}><Stack direction='row' spacing={{ xs: 1, md: 2 }}>
 
-          {/* Vertical Buttons Bar */}
-          <Stack>
+  
       {/* Vertical Buttons Bar */}
       <Stack>
 
@@ -430,12 +429,12 @@ export function Composer(props: {
               {/* Send / Stop */}
               {assistantTyping
                 ? <Button fullWidth variant='soft' color='primary' onClick={handleStopClicked} endDecorator={<StopOutlinedIcon />}>
-                  t("composer.stop")
+                  {t("composer.stop")}
                 </Button>
                 : <Button fullWidth variant='solid' color='primary' onClick={handleSendClicked} endDecorator={<TelegramIcon />}>
-                  t("composer.chat")}
-          </Button>
-                </Button>}
+                  {t("composer.chat")}
+          </Button>}
+                
             </Box>
 
             {/* [desktop-only] row with History button */}
