@@ -4,8 +4,8 @@ import { shallow } from 'zustand/shallow';
 
 import { IconButton, ListDivider, ListItemDecorator, Menu, MenuItem, Sheet, Stack, Switch, useColorScheme } from '@mui/joy';
 import { SxProps } from '@mui/joy/styles/types';
+import ClearIcon from '@mui/icons-material/Clear';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -15,9 +15,10 @@ import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { LocaleId, Locales,ChatModelId, ChatModels, SystemPurposeId, SystemPurposes } from '@/lib/data';
+import { ConfirmationModal } from '@/components/dialogs/ConfirmationModal';
 import { PagesMenu } from '@/components/Pages';
 import { StyledDropdown } from '@/components/util/StyledDropdown';
-import { useActiveConfiguration } from '@/lib/store-chats';
+import { useActiveConfiguration, useChatStore } from '@/lib/store-chats';
 import { useSettingsStore } from '@/lib/store-settings';
 
 import { useTranslation } from 'next-i18next';
@@ -27,32 +28,31 @@ import {  useRouter } from "next/router";
 /**
  * The top bar of the application, with the model and purpose selection, and menu/settings icons
  */
-export function ApplicationBar({ onClearConversation, onDownloadConversationJSON, onPublishConversation, onShowSettings, sx }: {
-  onClearConversation: (conversationId: (string | null)) => void;
-  onDownloadConversationJSON: (conversationId: (string | null)) => void;
-  onPublishConversation: (conversationId: (string | null)) => void;
+export function ApplicationBar(props: {
+  conversationId: string | null;
+  onDownloadConversationJSON: (conversationId: string) => void;
+  onPublishConversation: (conversationId: string) => void;
   onShowSettings: () => void;
   sx?: SxProps
 }) {
   // state
+  const [clearConfirmationId, setClearConfirmationId] = React.useState<string | null>(null);
   const [pagesMenuAnchor, setPagesMenuAnchor] = React.useState<HTMLElement | null>(null);
   const [actionsMenuAnchor, setActionsMenuAnchor] = React.useState<HTMLElement | null>(null);
 
-  // external state
+
+  // settings
+
   const { mode: colorMode, setMode: setColorMode } = useColorScheme();
+
   const { freeScroll, setFreeScroll, showSystemMessages, setShowSystemMessages } = useSettingsStore(state => ({
     freeScroll: state.freeScroll, setFreeScroll: state.setFreeScroll,
     showSystemMessages: state.showSystemMessages, setShowSystemMessages: state.setShowSystemMessages,
   }), shallow);
-  const { localeId, setLocaleId, chatModelId, setChatModelId, setSystemPurposeId, systemPurposeId } = useActiveConfiguration();
+  const { localeId, setLocaleId } = useActiveConfiguration();
 
   const { t } = useTranslation('common');
   const router = useRouter();
-
-  const handleChatModelChange = (event: any, value: ChatModelId | null) => value && setChatModelId(value);
-
-  const handleSystemPurposeChange = (event: any, value: SystemPurposeId | null) => value && setSystemPurposeId(value);
-
   const handleLocaleChange = (event: any, value: LocaleId | null) => {
     value && setLocaleId(value)
 
@@ -68,8 +68,8 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
 
   };
 
-  const closePagesMenu = () => setPagesMenuAnchor(null);
 
+  const closePagesMenu = () => setPagesMenuAnchor(null);
 
   const closeActionsMenu = () => setActionsMenuAnchor(null);
 
@@ -81,24 +81,52 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
 
   const handleActionShowSettings = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onShowSettings();
+    props.onShowSettings();
     closeActionsMenu();
   };
 
-  const handleActionDownloadChatJson = (e: React.MouseEvent) => {
+
+  // conversation actions
+
+  const { isEmpty, chatModelId, systemPurposeId, setMessages, setChatModelId, setSystemPurposeId } = useChatStore(state => {
+    const conversation = state.conversations.find(conversation => conversation.id === props.conversationId);
+    return {
+      isEmpty: conversation ? !conversation.messages.length : true,
+      chatModelId: conversation ? conversation.chatModelId : null,
+      systemPurposeId: conversation ? conversation.systemPurposeId : null,
+      setMessages: state.setMessages,
+      setChatModelId: state.setChatModelId,
+      setSystemPurposeId: state.setSystemPurposeId,
+    };
+  }, shallow);
+
+  const handleConversationClear = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    onDownloadConversationJSON(null);
+    setClearConfirmationId(props.conversationId);
   };
 
-  const handleActionPublishChat = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onPublishConversation(null);
+  const handleConfirmedClearConversation = () => {
+    if (clearConfirmationId) {
+      setMessages(clearConfirmationId, []);
+      setClearConfirmationId(null);
+    }
   };
 
-  const handleActionClearConversation = (e: React.MouseEvent, id: string | null) => {
+  const handleConversationPublish = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    onClearConversation(id || null);
+    props.conversationId && props.onPublishConversation(props.conversationId);
   };
+
+  const handleConversationDownload = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    props.conversationId && props.onDownloadConversationJSON(props.conversationId);
+  };
+
+  const handleChatModelChange = (event: any, value: ChatModelId | null) =>
+    value && props.conversationId && setChatModelId(props.conversationId, value);
+
+  const handleSystemPurposeChange = (event: any, value: SystemPurposeId | null) =>
+    value && props.conversationId && setSystemPurposeId(props.conversationId, value);
 
 
   return <>
@@ -109,7 +137,7 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
       sx={{
         p: 1,
         display: 'flex', flexDirection: 'row', justifyContent: 'space-between',
-        ...(sx || {}),
+        ...(props.sx || {}),
       }}>
 
       <IconButton variant='plain' onClick={event => setPagesMenuAnchor(event.currentTarget)}>
@@ -118,11 +146,13 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
 
       <Stack direction='row' sx={{ my: 'auto' }}>
 
-        <StyledDropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />
+        {chatModelId && <StyledDropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />}
 
-        <StyledDropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
+        {systemPurposeId && <StyledDropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />}
 
-        <StyledDropdown items={Locales} value={localeId} onChange={handleLocaleChange} />
+      
+
+       {localeId&& <StyledDropdown items={Locales} value={localeId} onChange={handleLocaleChange} />}
 
       </Stack>
 
@@ -133,11 +163,7 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
 
 
     {/* Left menu */}
-    {<PagesMenu
-      pagesMenuAnchor={pagesMenuAnchor}
-      onClose={closePagesMenu}
-      onClearConversation={handleActionClearConversation}
-    />}
+    {<PagesMenu pagesMenuAnchor={pagesMenuAnchor} onClose={closePagesMenu} />}
 
 
     {/* Right menu */}
@@ -172,7 +198,7 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
 
       <ListDivider />
 
-      <MenuItem onClick={handleActionDownloadChatJson}>
+      <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationDownload}>
         <ListItemDecorator>
           {/*<Badge size='sm' color='danger'>*/}
           <FileDownloadIcon />
@@ -181,7 +207,7 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
         Download JSON
       </MenuItem>
 
-      <MenuItem onClick={handleActionPublishChat}>
+      <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationPublish}>
         <ListItemDecorator>
           {/*<Badge size='sm' color='primary'>*/}
           <ExitToAppIcon />
@@ -192,10 +218,17 @@ export function ApplicationBar({ onClearConversation, onDownloadConversationJSON
 
       <ListDivider />
 
-      <MenuItem onClick={e => handleActionClearConversation(e, null)}>
-        <ListItemDecorator><DeleteOutlineIcon /></ListItemDecorator>
+      <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationClear}>
+        <ListItemDecorator><ClearIcon /></ListItemDecorator>
         {t('applicationBar.clearConversation')}
       </MenuItem>
     </Menu>
+
+
+    {/* Confirmations */}
+    <ConfirmationModal
+      open={!!clearConfirmationId} onClose={() => setClearConfirmationId(null)} onPositive={handleConfirmedClearConversation}
+      confirmationText={'Are you sure you want to discard all the messages?'} positiveActionText={'Clear conversation'}
+    />
 
   </>};
