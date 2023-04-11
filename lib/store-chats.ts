@@ -48,6 +48,7 @@ export interface DConversation {
   messages: DMessage[];
   systemPurposeId: SystemPurposeId;
   chatModelId: ChatModelId;
+  localeId: LocaleId;
   userTitle?: string;
   autoTitle?: string;
   tokenCount: number;                 // f(messages, chatModelId)
@@ -57,11 +58,11 @@ export interface DConversation {
   abortController: AbortController | null;
 }
 
-const createConversation = (id: string, name: string, systemPurposeId: SystemPurposeId, chatModelId: ChatModelId): DConversation =>
-  ({ id, name, messages: [], systemPurposeId, chatModelId, tokenCount: 0, created: Date.now(), updated: Date.now(), abortController: null });
+const createConversation = (id: string, name: string, systemPurposeId: SystemPurposeId, chatModelId: ChatModelId, localeId: LocaleId): DConversation =>
+  ({ id, name, messages: [], systemPurposeId, chatModelId, localeId,tokenCount: 0, created: Date.now(), updated: Date.now(), abortController: null });
 
 export const createDefaultConversation = () =>
-  createConversation(uuidv4(), 'Conversation', defaultSystemPurposeId, defaultChatModelId);
+  createConversation(uuidv4(), 'Conversation', defaultSystemPurposeId, defaultChatModelId, defaultLocaleId);
 
 
 /**

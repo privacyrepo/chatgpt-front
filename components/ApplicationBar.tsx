@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import * as React from 'react';
 import { shallow } from 'zustand/shallow';
 
@@ -14,16 +14,15 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
-import { LocaleId, Locales,ChatModelId, ChatModels, SystemPurposeId, SystemPurposes } from '@/lib/data';
+import { LocaleId, Locales, ChatModelId, ChatModels, SystemPurposeId, SystemPurposes } from '@/lib/data';
 import { ConfirmationModal } from '@/components/dialogs/ConfirmationModal';
 import { PagesMenu } from '@/components/Pages';
 import { StyledDropdown } from '@/components/util/StyledDropdown';
-import { useActiveConfiguration, useChatStore } from '@/lib/store-chats';
+import { useChatStore } from '@/lib/store-chats';
 import { useSettingsStore } from '@/lib/store-settings';
 
 import { useTranslation } from 'next-i18next';
-
-import {  useRouter } from "next/router";
+import { useRouter } from 'next/router';
 
 /**
  * The top bar of the application, with the model and purpose selection, and menu/settings icons
@@ -33,41 +32,29 @@ export function ApplicationBar(props: {
   onDownloadConversationJSON: (conversationId: string) => void;
   onPublishConversation: (conversationId: string) => void;
   onShowSettings: () => void;
-  sx?: SxProps
+  sx?: SxProps;
 }) {
   // state
   const [clearConfirmationId, setClearConfirmationId] = React.useState<string | null>(null);
   const [pagesMenuAnchor, setPagesMenuAnchor] = React.useState<HTMLElement | null>(null);
   const [actionsMenuAnchor, setActionsMenuAnchor] = React.useState<HTMLElement | null>(null);
 
-
   // settings
 
   const { mode: colorMode, setMode: setColorMode } = useColorScheme();
 
-  const { freeScroll, setFreeScroll, showSystemMessages, setShowSystemMessages } = useSettingsStore(state => ({
-    freeScroll: state.freeScroll, setFreeScroll: state.setFreeScroll,
-    showSystemMessages: state.showSystemMessages, setShowSystemMessages: state.setShowSystemMessages,
-  }), shallow);
-  const { localeId, setLocaleId } = useActiveConfiguration();
+  const { freeScroll, setFreeScroll, showSystemMessages, setShowSystemMessages } = useSettingsStore(
+    (state) => ({
+      freeScroll: state.freeScroll,
+      setFreeScroll: state.setFreeScroll,
+      showSystemMessages: state.showSystemMessages,
+      setShowSystemMessages: state.setShowSystemMessages,
+    }),
+    shallow,
+  );
 
   const { t } = useTranslation('common');
   const router = useRouter();
-  const handleLocaleChange = (event: any, value: LocaleId | null) => {
-    value && setLocaleId(value)
-
-
-    const currentPath = router.asPath.replace(new RegExp(`^/${router.locale}`), '');
-
-    const newLocale = `/${value?.split('-')[0]}`
-
-      // Navigate to the new URL with the new locale
-    router.push(currentPath, `${newLocale}${currentPath}`, { locale: false });
-  
-
-
-  };
-
 
   const closePagesMenu = () => setPagesMenuAnchor(null);
 
@@ -85,18 +72,19 @@ export function ApplicationBar(props: {
     closeActionsMenu();
   };
 
-
   // conversation actions
 
-  const { isEmpty, chatModelId, systemPurposeId, setMessages, setChatModelId, setSystemPurposeId } = useChatStore(state => {
-    const conversation = state.conversations.find(conversation => conversation.id === props.conversationId);
+  const { isEmpty, chatModelId, systemPurposeId, localeId, setMessages, setChatModelId, setSystemPurposeId, setLocaleId } = useChatStore((state) => {
+    const conversation = state.conversations.find((conversation) => conversation.id === props.conversationId);
     return {
       isEmpty: conversation ? !conversation.messages.length : true,
+      localeId: conversation ? conversation.localeId : null,
       chatModelId: conversation ? conversation.chatModelId : null,
       systemPurposeId: conversation ? conversation.systemPurposeId : null,
       setMessages: state.setMessages,
       setChatModelId: state.setChatModelId,
       setSystemPurposeId: state.setSystemPurposeId,
+      setLocaleId: state.setLocaleId,
     };
   }, shallow);
 
@@ -122,113 +110,137 @@ export function ApplicationBar(props: {
     props.conversationId && props.onDownloadConversationJSON(props.conversationId);
   };
 
-  const handleChatModelChange = (event: any, value: ChatModelId | null) =>
-    value && props.conversationId && setChatModelId(props.conversationId, value);
+  const handleChatModelChange = (event: any, value: ChatModelId | null) => value && props.conversationId && setChatModelId(props.conversationId, value);
 
   const handleSystemPurposeChange = (event: any, value: SystemPurposeId | null) =>
     value && props.conversationId && setSystemPurposeId(props.conversationId, value);
 
+  const handleLocaleChange = (event: any, value: LocaleId | null) => {
+    value && props.conversationId && setLocaleId(props.conversationId, value);
+    const currentPath = router.asPath.replace(new RegExp(`^/${router.locale}`), '');
 
-  return <>
+    const newLocale = `/${value?.split('-')[0]}`;
 
-    {/* Top Bar with 2 icons and Model/Purpose selectors */}
-    <Sheet
-      variant='solid' color='neutral' invertedColors
-      sx={{
-        p: 1,
-        display: 'flex', flexDirection: 'row', justifyContent: 'space-between',
-        ...(props.sx || {}),
-      }}>
+    // Navigate to the new URL with the new locale
+    router.push(currentPath, `${newLocale}${currentPath}`, { locale: false });
+  };
 
-      <IconButton variant='plain' onClick={event => setPagesMenuAnchor(event.currentTarget)}>
-        <MenuIcon />
-      </IconButton>
+  return (
+    <>
+      {/* Top Bar with 2 icons and Model/Purpose selectors */}
+      <Sheet
+        variant="solid"
+        color="neutral"
+        invertedColors
+        sx={{
+          p: 1,
+          display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          ...(props.sx || {}),
+        }}
+      >
+        <IconButton variant="plain" onClick={(event) => setPagesMenuAnchor(event.currentTarget)}>
+          <MenuIcon />
+        </IconButton>
 
-      <Stack direction='row' sx={{ my: 'auto' }}>
+        <Stack direction="row" sx={{ my: 'auto' }}>
+          {chatModelId && <StyledDropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />}
 
-        {chatModelId && <StyledDropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />}
+          {systemPurposeId && <StyledDropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />}
 
-        {systemPurposeId && <StyledDropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />}
+          {localeId && <StyledDropdown items={Locales} value={localeId} onChange={handleLocaleChange} />}
+        </Stack>
 
-      
+        <IconButton variant="plain" onClick={(event) => setActionsMenuAnchor(event.currentTarget)}>
+          <MoreVertIcon />
+        </IconButton>
+      </Sheet>
 
-       {localeId&& <StyledDropdown items={Locales} value={localeId} onChange={handleLocaleChange} />}
+      {/* Left menu */}
+      {<PagesMenu pagesMenuAnchor={pagesMenuAnchor} onClose={closePagesMenu} />}
 
-      </Stack>
+      {/* Right menu */}
+      <Menu
+        variant="plain"
+        color="neutral"
+        size="lg"
+        placement="bottom-end"
+        sx={{ minWidth: 280 }}
+        open={!!actionsMenuAnchor}
+        anchorEl={actionsMenuAnchor}
+        onClose={closeActionsMenu}
+        disablePortal={false}
+      >
+        <MenuItem>
+          <ListItemDecorator>
+            <DarkModeIcon />
+          </ListItemDecorator>
+          {t('applicationBar.dark')}
+          <Switch checked={colorMode === 'dark'} onChange={handleDarkModeToggle} sx={{ ml: 'auto' }} />
+        </MenuItem>
 
-      <IconButton variant='plain' onClick={event => setActionsMenuAnchor(event.currentTarget)}>
-        <MoreVertIcon />
-      </IconButton>
-    </Sheet>
+        <MenuItem>
+          <ListItemDecorator>
+            <SettingsSuggestIcon />
+          </ListItemDecorator>
+          {t('applicationBar.systemText')}
+          <Switch checked={showSystemMessages} onChange={handleSystemMessagesToggle} sx={{ ml: 'auto' }} />
+        </MenuItem>
 
+        <MenuItem>
+          <ListItemDecorator>
+            <SwapVertIcon />
+          </ListItemDecorator>
+          {t('applicationBar.freeScroll')}
+          <Switch checked={freeScroll} onChange={handleScrollModeToggle} sx={{ ml: 'auto' }} />
+        </MenuItem>
 
-    {/* Left menu */}
-    {<PagesMenu pagesMenuAnchor={pagesMenuAnchor} onClose={closePagesMenu} />}
+        <MenuItem onClick={handleActionShowSettings}>
+          <ListItemDecorator>
+            <SettingsOutlinedIcon />
+          </ListItemDecorator>
+          {t('applicationBar.settings')}
+        </MenuItem>
 
+        <ListDivider />
 
-    {/* Right menu */}
-    <Menu
-      variant='plain' color='neutral' size='lg' placement='bottom-end' sx={{ minWidth: 280 }}
-      open={!!actionsMenuAnchor} anchorEl={actionsMenuAnchor} onClose={closeActionsMenu}
-      disablePortal={false}>
+        <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationDownload}>
+          <ListItemDecorator>
+            {/*<Badge size='sm' color='danger'>*/}
+            <FileDownloadIcon />
+            {/*</Badge>*/}
+          </ListItemDecorator>
+          Download JSON
+        </MenuItem>
 
-      <MenuItem>
-        <ListItemDecorator><DarkModeIcon /></ListItemDecorator>
-        {t('applicationBar.dark')}
-        <Switch checked={colorMode === 'dark'} onChange={handleDarkModeToggle} sx={{ ml: 'auto' }} />
-      </MenuItem>
+        <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationPublish}>
+          <ListItemDecorator>
+            {/*<Badge size='sm' color='primary'>*/}
+            <ExitToAppIcon />
+            {/*</Badge>*/}
+          </ListItemDecorator>
+          {t('applicationBar.shareViaPasteGG')}
+        </MenuItem>
 
+        <ListDivider />
 
-      <MenuItem>
-        <ListItemDecorator><SettingsSuggestIcon /></ListItemDecorator>
-        {t('applicationBar.systemText')}
-        <Switch checked={showSystemMessages} onChange={handleSystemMessagesToggle} sx={{ ml: 'auto' }} />
-      </MenuItem>
+        <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationClear}>
+          <ListItemDecorator>
+            <ClearIcon />
+          </ListItemDecorator>
+          {t('applicationBar.clearConversation')}
+        </MenuItem>
+      </Menu>
 
-      <MenuItem>
-        <ListItemDecorator><SwapVertIcon /></ListItemDecorator>
-        {t('applicationBar.freeScroll')}
-        <Switch checked={freeScroll} onChange={handleScrollModeToggle} sx={{ ml: 'auto' }} />
-      </MenuItem>
-
-      <MenuItem onClick={handleActionShowSettings}>
-        <ListItemDecorator><SettingsOutlinedIcon /></ListItemDecorator>
-        {t('applicationBar.settings')}
-      </MenuItem>
-
-      <ListDivider />
-
-      <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationDownload}>
-        <ListItemDecorator>
-          {/*<Badge size='sm' color='danger'>*/}
-          <FileDownloadIcon />
-          {/*</Badge>*/}
-        </ListItemDecorator>
-        Download JSON
-      </MenuItem>
-
-      <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationPublish}>
-        <ListItemDecorator>
-          {/*<Badge size='sm' color='primary'>*/}
-          <ExitToAppIcon />
-          {/*</Badge>*/}
-        </ListItemDecorator>
-        {t('applicationBar.shareViaPasteGG')}
-      </MenuItem>
-
-      <ListDivider />
-
-      <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationClear}>
-        <ListItemDecorator><ClearIcon /></ListItemDecorator>
-        {t('applicationBar.clearConversation')}
-      </MenuItem>
-    </Menu>
-
-
-    {/* Confirmations */}
-    <ConfirmationModal
-      open={!!clearConfirmationId} onClose={() => setClearConfirmationId(null)} onPositive={handleConfirmedClearConversation}
-      confirmationText={'Are you sure you want to discard all the messages?'} positiveActionText={'Clear conversation'}
-    />
-
-  </>};
+      {/* Confirmations */}
+      <ConfirmationModal
+        open={!!clearConfirmationId}
+        onClose={() => setClearConfirmationId(null)}
+        onPositive={handleConfirmedClearConversation}
+        confirmationText={'Are you sure you want to discard all the messages?'}
+        positiveActionText={'Clear conversation'}
+      />
+    </>
+  );
+}

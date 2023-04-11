@@ -10,7 +10,6 @@ import { SystemPurposeId, SystemPurposes } from '@/lib/data';
 import { useChatStore } from '@/lib/store-chats';
 import { useSettingsStore } from '@/lib/store-settings';
 
-
 // Constants for tile sizes / grid width - breakpoints need to be computed here to work around
 // the "flex box cannot shrink over wrapped content" issue
 //
@@ -25,25 +24,22 @@ const bpMaxWidth = Object.entries(bpTileSize).reduce((acc, [key, value], index) 
 }, {} as Record<string, number>);
 const bpTileGap = { xs: 2, md: 3 };
 
-
 // Add this utility function to get a random array element
-const getRandomElement = <T extends any>(array: T[]): T | undefined =>
-  array.length > 0 ? array[Math.floor(Math.random() * array.length)] : undefined;
-
+const getRandomElement = <T extends any>(array: T[]): T | undefined => (array.length > 0 ? array[Math.floor(Math.random() * array.length)] : undefined);
 
 /**
  * Purpose selector for the current chat. Clicking on any item activates it for the current chat.
  */
-export function PurposeSelector(props: { conversationId: string, runExample: (example: string) => void }) {
+export function PurposeSelector(props: { conversationId: string; runExample: (example: string) => void }) {
   // state
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filteredIDs, setFilteredIDs] = React.useState<SystemPurposeId[] | null>(null);
 
   // external state
   const theme = useTheme();
-  const showPurposeFinder = useSettingsStore(state => state.showPurposeFinder);
-  const { systemPurposeId, setSystemPurposeId } = useChatStore(state => {
-    const conversation = state.conversations.find(conversation => conversation.id === props.conversationId);
+  const showPurposeFinder = useSettingsStore((state) => state.showPurposeFinder);
+  const { systemPurposeId, setSystemPurposeId } = useChatStore((state) => {
+    const conversation = state.conversations.find((conversation) => conversation.id === props.conversationId);
     return {
       systemPurposeId: conversation ? conversation.systemPurposeId : null,
       setSystemPurposeId: conversation ? state.setSystemPurposeId : null,
@@ -51,9 +47,7 @@ export function PurposeSelector(props: { conversationId: string, runExample: (ex
   }, shallow);
 
   // safety check - shouldn't happen
-  if (!systemPurposeId || !setSystemPurposeId)
-    return null;
-
+  if (!systemPurposeId || !setSystemPurposeId) return null;
 
   const handleSearchClear = () => {
     setSearchQuery('');
@@ -62,34 +56,31 @@ export function PurposeSelector(props: { conversationId: string, runExample: (ex
 
   const handleSearchOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
-    if (!query)
-      return handleSearchClear();
+    if (!query) return handleSearchClear();
     setSearchQuery(query);
 
     // Filter results based on search term
     const ids = Object.keys(SystemPurposes)
-      .filter(key => SystemPurposes.hasOwnProperty(key))
-      .filter(key => {
+      .filter((key) => SystemPurposes.hasOwnProperty(key))
+      .filter((key) => {
         const purpose = SystemPurposes[key as SystemPurposeId];
-        return purpose.title.toLowerCase().includes(query.toLowerCase())
-          || (typeof purpose.description === 'string' && purpose.description.toLowerCase().includes(query.toLowerCase()));
+        return (
+          purpose.title.toLowerCase().includes(query.toLowerCase()) ||
+          (typeof purpose.description === 'string' && purpose.description.toLowerCase().includes(query.toLowerCase()))
+        );
       });
     setFilteredIDs(ids as SystemPurposeId[]);
 
     // If there's a search term, activate the first item
-    if (ids.length && !ids.includes(systemPurposeId))
-      handlePurposeChanged(ids[0] as SystemPurposeId);
+    if (ids.length && !ids.includes(systemPurposeId)) handlePurposeChanged(ids[0] as SystemPurposeId);
   };
 
   const handleSearchOnKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-    if (e.key == 'Escape')
-      handleSearchClear();
+    if (e.key == 'Escape') handleSearchClear();
   };
 
-
   const handlePurposeChanged = (purposeId: SystemPurposeId | null) => {
-    if (purposeId)
-      setSystemPurposeId(props.conversationId, purposeId);
+    if (purposeId) setSystemPurposeId(props.conversationId, purposeId);
   };
 
   const handleCustomSystemMessageChange = (v: React.ChangeEvent<HTMLTextAreaElement>): void => {
@@ -99,99 +90,110 @@ export function PurposeSelector(props: { conversationId: string, runExample: (ex
   };
 
   // we show them all if the filter is clear (null)
-  const purposeIDs = (filteredIDs && showPurposeFinder) ? filteredIDs : Object.keys(SystemPurposes);
+  const purposeIDs = filteredIDs && showPurposeFinder ? filteredIDs : Object.keys(SystemPurposes);
 
-  const selectedPurpose = purposeIDs.length ? (SystemPurposes[systemPurposeId] ?? null) : null;
-  const selectedExample = selectedPurpose?.examples && getRandomElement(selectedPurpose.examples) || null;
+  const selectedPurpose = purposeIDs.length ? SystemPurposes[systemPurposeId] ?? null : null;
+  const selectedExample = (selectedPurpose?.examples && getRandomElement(selectedPurpose.examples)) || null;
 
-  return <>
+  return (
+    <>
+      {showPurposeFinder && (
+        <Box sx={{ p: 2 * tileSpacing }}>
+          <Input
+            fullWidth
+            variant="outlined"
+            color="neutral"
+            value={searchQuery}
+            onChange={handleSearchOnChange}
+            onKeyDown={handleSearchOnKeyDown}
+            placeholder="Search for purpose…"
+            startDecorator={<SearchIcon />}
+            endDecorator={
+              searchQuery && (
+                <IconButton variant="plain" color="neutral" onClick={handleSearchClear}>
+                  <ClearIcon />
+                </IconButton>
+              )
+            }
+            sx={{
+              boxShadow: theme.vars.shadow.sm,
+            }}
+          />
+        </Box>
+      )}
 
-    {showPurposeFinder && <Box sx={{ p: 2 * tileSpacing }}>
-      <Input
-        fullWidth
-        variant='outlined' color='neutral'
-        value={searchQuery} onChange={handleSearchOnChange}
-        onKeyDown={handleSearchOnKeyDown}
-        placeholder='Search for purpose…'
-        startDecorator={<SearchIcon />}
-        endDecorator={searchQuery && (
-          <IconButton variant='plain' color='neutral' onClick={handleSearchClear}>
-            <ClearIcon />
-          </IconButton>
-        )}
-        sx={{
-          boxShadow: theme.vars.shadow.sm,
-        }}
-      />
-    </Box>}
+      <Stack direction="column" sx={{ minHeight: '60vh', justifyContent: 'center', alignItems: 'center' }}>
+        <Box sx={{ maxWidth: bpMaxWidth }}>
+          <Typography level="body3" color="neutral" sx={{ mb: 2 }}>
+            Select an AI purpose
+          </Typography>
 
-    <Stack direction='column' sx={{ minHeight: '60vh', justifyContent: 'center', alignItems: 'center' }}>
+          <Grid container spacing={tileSpacing} sx={{ justifyContent: 'flex-start' }}>
+            {purposeIDs.map((spId) => (
+              <Grid key={spId}>
+                <Button
+                  variant={systemPurposeId === spId ? 'solid' : 'soft'}
+                  color={systemPurposeId === spId ? 'primary' : 'neutral'}
+                  onClick={() => handlePurposeChanged(spId as SystemPurposeId)}
+                  sx={{
+                    flexDirection: 'column',
+                    fontWeight: 500,
+                    gap: bpTileGap,
+                    height: bpTileSize,
+                    width: bpTileSize,
+                    ...(systemPurposeId !== spId
+                      ? {
+                          boxShadow: theme.vars.shadow.md,
+                          background: theme.vars.palette.background.level1,
+                        }
+                      : {}),
+                  }}
+                >
+                  <div style={{ fontSize: '2rem' }}>{SystemPurposes[spId as SystemPurposeId]?.symbol}</div>
+                  <div>{SystemPurposes[spId as SystemPurposeId]?.title}</div>
+                </Button>
+              </Grid>
+            ))}
+          </Grid>
 
-      <Box sx={{ maxWidth: bpMaxWidth }}>
-
-        <Typography level='body3' color='neutral' sx={{ mb: 2 }}>
-          Select an AI purpose
-        </Typography>
-
-        <Grid container spacing={tileSpacing} sx={{ justifyContent: 'flex-start' }}>
-          {purposeIDs.map((spId) => (
-            <Grid key={spId}>
-              <Button
-                variant={systemPurposeId === spId ? 'solid' : 'soft'}
-                color={systemPurposeId === spId ? 'primary' : 'neutral'}
-                onClick={() => handlePurposeChanged(spId as SystemPurposeId)}
-                sx={{
-                  flexDirection: 'column',
-                  fontWeight: 500,
-                  gap: bpTileGap,
-                  height: bpTileSize,
-                  width: bpTileSize,
-                  ...(systemPurposeId !== spId ? {
-                    boxShadow: theme.vars.shadow.md,
-                    background: theme.vars.palette.background.level1,
-                  } : {}),
-                }}
-              >
-                <div style={{ fontSize: '2rem' }}>
-                  {SystemPurposes[spId as SystemPurposeId]?.symbol}
-                </div>
-                <div>
-                  {SystemPurposes[spId as SystemPurposeId]?.title}
-                </div>
-              </Button>
-            </Grid>
-          ))}
-        </Grid>
-
-        <Typography level='body2' sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1, '&:hover > button': { opacity: 1 } }}>
-          {!selectedPurpose
-            ? 'Oops! No AI purposes found for your search.'
-            : (selectedExample ? <>
+          <Typography level="body2" sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1, '&:hover > button': { opacity: 1 } }}>
+            {!selectedPurpose ? (
+              'Oops! No AI purposes found for your search.'
+            ) : selectedExample ? (
+              <>
                 {selectedExample}
-                <IconButton variant='plain' color='primary' size='sm'
-                            onClick={() => props.runExample(selectedExample)}
-                            sx={{ opacity: 0, transition: 'opacity 0.3s' }}>
+                <IconButton
+                  variant="plain"
+                  color="primary"
+                  size="sm"
+                  onClick={() => props.runExample(selectedExample)}
+                  sx={{ opacity: 0, transition: 'opacity 0.3s' }}
+                >
                   <TelegramIcon />
                 </IconButton>
-              </> : selectedPurpose.description
+              </>
+            ) : (
+              selectedPurpose.description
             )}
-        </Typography>
+          </Typography>
 
-        {systemPurposeId === 'Custom' && (
-          <Textarea
-            variant='outlined' autoFocus placeholder={'Craft your custom system message here…'}
-            minRows={3}
-            defaultValue={SystemPurposes['Custom']?.systemMessage} onChange={handleCustomSystemMessageChange}
-            sx={{
-              background: theme.vars.palette.background.level1,
-              lineHeight: 1.75,
-              mt: 1,
-            }} />
-        )}
-
-      </Box>
-
-    </Stack>
-
-  </>;
+          {systemPurposeId === 'Custom' && (
+            <Textarea
+              variant="outlined"
+              autoFocus
+              placeholder={'Craft your custom system message here…'}
+              minRows={3}
+              defaultValue={SystemPurposes['Custom']?.systemMessage}
+              onChange={handleCustomSystemMessageChange}
+              sx={{
+                background: theme.vars.palette.background.level1,
+                lineHeight: 1.75,
+                mt: 1,
+              }}
+            />
+          )}
+        </Box>
+      </Stack>
+    </>
+  );
 }
