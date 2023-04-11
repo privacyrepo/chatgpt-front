@@ -240,5 +240,5 @@ export function ApplicationBar(props: {
         positiveActionText={'Clear conversation'}
       />
     </>
-  );
+ 
 }
