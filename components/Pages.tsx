@@ -1,17 +1,19 @@
 import * as React from 'react';
 import { shallow } from 'zustand/shallow';
 
-import { Avatar, Box, IconButton, ListItemDecorator, Menu, MenuItem, Tooltip, Typography } from '@mui/joy';
+import { Avatar, Box, IconButton, ListDivider, ListItemDecorator, Menu, MenuItem, Tooltip, Typography } from '@mui/joy';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
 import { ConfirmationModal } from '@/components/dialogs/ConfirmationModal';
 // import { Link } from '@/components/util/Link';
 import { SystemPurposes } from '@/lib/data';
-import { createDefaultConversation, MAX_CONVERSATIONS, useChatStore, useConversationIDs } from '@/lib/store-chats';
+import { conversationTitle, MAX_CONVERSATIONS, useChatStore, useConversationIDs } from '@/lib/store-chats';
 import { useTranslation } from 'next-i18next';
 
+
 const DEBUG_CONVERSATION_IDs = false;
+const SPECIAL_ID_ALL_CHATS = 'all-chats';
 
 function ConversationListItem(props: {
   conversationId: string;
@@ -27,7 +29,7 @@ function ConversationListItem(props: {
     return conversation && {
       assistantTyping: !!conversation.abortController,
       chatModelId: conversation.chatModelId,
-      name: conversation.userTitle || conversation.autoTitle || conversation.name,
+      name: conversationTitle(conversation),
       systemPurposeId: conversation.systemPurposeId,
     };
   }, shallow);
@@ -69,9 +71,8 @@ function ConversationListItem(props: {
       </ListItemDecorator>
 
       {/* Text */}
-      <Box onDoubleClick={() => props.conversationEditTitle(props.conversationId)} sx={{ mr: 1 }}>
-        {DEBUG_CONVERSATION_IDs ? props.conversationId.slice(0, 10) : name}
-        {assistantTyping && '...'}
+      <Box onDoubleClick={() => props.conversationEditTitle(props.conversationId)} sx={{ mr: 2 }}>
+        {DEBUG_CONVERSATION_IDs ? props.conversationId.slice(0, 10) : name}{assistantTyping && '...'}
       </Box>
 
       {/* Edit */}
@@ -84,7 +85,7 @@ function ConversationListItem(props: {
       {/*  <EditIcon />*/}
       {/*</IconButton>*/}
 
-      {/* Clear */}
+      {/* Delete */}
       {!props.isSingle && (
         <IconButton
           variant="outlined"
@@ -109,19 +110,21 @@ export function PagesMenu(props: { pagesMenuAnchor: HTMLElement | null; onClose:
 
   // external state
   const conversationIDs = useConversationIDs();
-  const { activeConversationId, setActiveConversationId, addConversation, deleteConversation, setActiveConversation } = useChatStore(state => ({
+  const { activeConversationId, setActiveConversationId, createConversation, deleteConversation, setActiveConversation } = useChatStore(state => ({
     activeConversationId: state.activeConversationId,
     setActiveConversationId: state.setActiveConversationId,
-    addConversation: state.addConversation,
+    createConversation: state.createConversation,
     deleteConversation: state.deleteConversation,
     setActiveConversation: state.setActiveConversationId,
   }), shallow);
 
 
+  const hasChats = conversationIDs.length > 0;
   const singleChat = conversationIDs.length === 1;
   const maxReached = conversationIDs.length >= MAX_CONVERSATIONS;
 
-  const handleNew = () => addConversation(createDefaultConversation(), true);
+
+  const handleNew = () => createConversation();
 
   const handleConversationActivate = (conversationId: string) => setActiveConversation(conversationId);
 
@@ -136,44 +139,43 @@ export function PagesMenu(props: { pagesMenuAnchor: HTMLElement | null; onClose:
   };
 
   const handleConfirmedDeleteConversation = () => {
-    if (!singleChat && deleteConfirmationId) {
-      deleteConversation(deleteConfirmationId);
+    if (hasChats && deleteConfirmationId) {
+      if (deleteConfirmationId === SPECIAL_ID_ALL_CHATS) {
+        createConversation();
+        conversationIDs.forEach(conversationId => deleteConversation(conversationId));
+      } else
+        deleteConversation(deleteConfirmationId);
       setDeleteConfirmationId(null);
     }
   };
 
-  const newSuffix = maxReached && (
-    <Tooltip title={`Max reached:${MAX_CONVERSATIONS} chats. The oldest will be eliminated.`}>
-      <span>⚠️</span>
-    </Tooltip>
-  );
+  const handleDeleteAll = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteConfirmationId(SPECIAL_ID_ALL_CHATS);
+  };
 
-  const { t } = useTranslation('common');
-  return (
-    <>
-      <Menu
-        variant="plain"
-        color="neutral"
-        size="lg"
-        placement="bottom-start"
-        sx={{ minWidth: 320 }}
-        open={!!props.pagesMenuAnchor}
-        anchorEl={props.pagesMenuAnchor}
-        onClose={props.onClose}
-        disablePortal={false}
-      >
-        {/*<ListItem>*/}
-        {/*  <Typography level='body2'>*/}
-        {/*    Active chats*/}
-        {/*  </Typography>*/}
-        {/*</ListItem>*/}
 
-        <MenuItem onClick={handleNew}>
-          <ListItemDecorator>
-            <AddIcon />
-          </ListItemDecorator>
-          <Typography>New chat {newSuffix}</Typography>
-        </MenuItem>
+  const NewPrefix = maxReached && <Tooltip title={`Maximum limit: ${MAX_CONVERSATIONS} chats. Proceeding will remove the oldest chat.`}><span>⚠️ </span></Tooltip>;
+
+  return <>
+
+    <Menu
+      variant='plain' color='neutral' size='lg' placement='bottom-start' sx={{ minWidth: 320 }}
+      open={!!props.pagesMenuAnchor} anchorEl={props.pagesMenuAnchor} onClose={props.onClose}
+      disablePortal={false}>
+
+      {/*<ListItem>*/}
+      {/*  <Typography level='body2'>*/}
+      {/*    Active chats*/}
+      {/*  </Typography>*/}
+      {/*</ListItem>*/}
+
+      <MenuItem onClick={handleNew}>
+        <ListItemDecorator><AddIcon /></ListItemDecorator>
+        <Typography>
+          {NewPrefix}New
+        </Typography>
+      </MenuItem>
 
         {conversationIDs.map((conversationId) => (
           <ConversationListItem
@@ -187,28 +189,39 @@ export function PagesMenu(props: { pagesMenuAnchor: HTMLElement | null; onClose:
           />
         ))}
 
-        {/*<ListItem>*/}
-        {/*  <Typography level='body2'>*/}
-        {/*    Scratchpad*/}
-        {/*  </Typography>*/}
-        {/*</ListItem>*/}
+      <ListDivider />
 
-        {/*<MenuItem>*/}
-        {/*  <ListItemDecorator />*/}
-        {/*  <Typography sx={{ opacity: 0.5 }}>*/}
-        {/*    Feature <Link href='https://github.com/enricoros/nextjs-chatgpt-app/issues/17' target='_blank'>#17</Link>*/}
-        {/*  </Typography>*/}
-        {/*</MenuItem>*/}
-      </Menu>
+      <MenuItem disabled={!hasChats} onClick={handleDeleteAll}>
+        <ListItemDecorator><DeleteOutlineIcon /></ListItemDecorator>
+        <Typography>
+          Delete all
+        </Typography>
+      </MenuItem>
 
-      {/* Confirmations */}
-      <ConfirmationModal
-        open={!!deleteConfirmationId}
-        onClose={() => setDeleteConfirmationId(null)}
-        onPositive={handleConfirmedDeleteConversation}
-        confirmationText={'Are you sure you want to delete this conversation?'}
-        positiveActionText={'Delete conversation'}
-      />
-    </>
-  );
+      {/*<ListItem>*/}
+      {/*  <Typography level='body2'>*/}
+      {/*    Scratchpad*/}
+      {/*  </Typography>*/}
+      {/*</ListItem>*/}
+      {/*<MenuItem>*/}
+      {/*  <ListItemDecorator />*/}
+      {/*  <Typography sx={{ opacity: 0.5 }}>*/}
+      {/*    Feature <Link href='https://github.com/enricoros/nextjs-chatgpt-app/issues/17' target='_blank'>#17</Link>*/}
+      {/*  </Typography>*/}
+      {/*</MenuItem>*/}
+
+    </Menu>
+
+    {/* Confirmations */}
+    <ConfirmationModal
+      open={!!deleteConfirmationId} onClose={() => setDeleteConfirmationId(null)} onPositive={handleConfirmedDeleteConversation}
+      confirmationText={deleteConfirmationId === SPECIAL_ID_ALL_CHATS
+        ? 'Are you absolutely sure you want to delete ALL conversations? This action cannot be undone.'
+        : 'Are you sure you want to delete this conversation?'}
+      positiveActionText={deleteConfirmationId === SPECIAL_ID_ALL_CHATS
+        ? 'Yes, delete all'
+        : 'Delete conversation'}
+    />
+
+  </>;
 }

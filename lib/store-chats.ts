@@ -16,7 +16,7 @@ export interface ChatStore {
   activeConversationId: string | null;
 
   // store setters
-  addConversation: (conversation: DConversation, activate: boolean) => void;
+  createConversation: () => void;
   deleteConversation: (conversationId: string) => void;
   setActiveConversationId: (conversationId: string) => void;
 
@@ -46,7 +46,6 @@ export interface ChatStore {
  */
 export interface DConversation {
   id: string;
-  name: string;
   messages: DMessage[];
   systemPurposeId: SystemPurposeId;
   chatModelId: ChatModelId;
@@ -60,11 +59,19 @@ export interface DConversation {
   abortController: AbortController | null;
 }
 
-const createConversation = (id: string, name: string, systemPurposeId: SystemPurposeId, chatModelId: ChatModelId, localeId: LocaleId): DConversation =>
-  ({ id, name, messages: [], systemPurposeId, chatModelId, localeId,tokenCount: 0, created: Date.now(), updated: Date.now(), abortController: null });
+export const createDefaultConversation = (systemPurposeId?: SystemPurposeId, chatModelId?: ChatModelId, localeId: LocaleId): DConversation => ({
+  id: uuidv4(),
+  messages: [],
+  systemPurposeId: systemPurposeId || defaultSystemPurposeId,
+  chatModelId: chatModelId || defaultChatModelId,
+  localeId,tokenCount: 0,
+  created: Date.now(),
+  updated: Date.now(),
+  abortController: null,
+});
 
-export const createDefaultConversation = () =>
-  createConversation(uuidv4(), 'Conversation', defaultSystemPurposeId, defaultChatModelId, defaultLocaleId);
+export const conversationTitle = (conversation: DConversation): string =>
+  conversation.userTitle || conversation.autoTitle || 'Conversation';
 
 
 /**
@@ -118,16 +125,19 @@ export const useChatStore = create<ChatStore>()(devtools(
       activeConversationId: defaultConversations[0].id,
 
 
-      addConversation: (conversation: DConversation, activate: boolean) =>
-        set(state => (
-          {
+      createConversation: () =>
+        set(state => {
+          // inherit some values from the active conversation (matches users' expectations)
+          const activeConversation = state.conversations.find((conversation: DConversation): boolean => conversation.id === state.activeConversationId);
+          const conversation = createDefaultConversation(activeConversation?.systemPurposeId, activeConversation?.chatModelId);
+          return {
             conversations: [
               conversation,
               ...state.conversations.slice(0, MAX_CONVERSATIONS - 1),
             ],
-            ...(activate ? { activeConversationId: conversation.id } : {}),
-          }
-        )),
+            activeConversationId: conversation.id,
+          };
+        }),
 
       deleteConversation: (conversationId: string) =>
         set(state => {
