@@ -1,90 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createParser } from 'eventsource-parser';
 import { i18n, useTranslation } from 'next-i18next';
-
-if (!process.env.OPENAI_API_KEY)
-  console.warn(
-    'OPENAI_API_KEY has not been provided in this deployment environment. ' + 'Will use the optional keys incoming from the client, which is not recommended.',
-  );
-
-// definition for OpenAI wire types
-
-namespace OpenAIAPI.Chat {
-  export interface CompletionMessage {
-    role: 'assistant' | 'system' | 'user';
-    content: string;
-  }
-
-  export interface CompletionsRequest {
-    model: string;
-    messages: CompletionMessage[];
-    temperature?: number;
-    top_p?: number;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    max_tokens?: number;
-    stream: boolean;
-    n: number;
-  }
-
-  export interface CompletionsResponseChunked {
-    id: string; // unique id of this chunk
-    object: 'chat.completion.chunk';
-    created: number; // unix timestamp in seconds
-    model: string; // can differ from the ask, e.g. 'gpt-4-0314'
-    choices: {
-      delta: Partial<CompletionMessage>;
-      index: number; // always 0s for n=1
-      finish_reason: 'stop' | 'length' | null;
-    }[];
-  }
-}
-
-async function fetchOpenAIChatCompletions(
-  apiCommon: ApiCommonInputs,
-  completionRequest: Omit<OpenAIAPI.Chat.CompletionsRequest, 'stream' | 'n'>,
-  signal: AbortSignal,
-): Promise<Response> {
-  const streamingCompletionRequest: OpenAIAPI.Chat.CompletionsRequest = {
-    ...completionRequest,
-    stream: true,
-    n: 1,
-  };
-
-  const response = await fetch(`https://${apiCommon.apiHost}/v1/chat/completions`, {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiCommon.apiKey}`,
-      ...(apiCommon.apiOrgId && { 'OpenAI-Organization': apiCommon.apiOrgId }),
-    },
-    method: 'POST',
-    body: JSON.stringify(streamingCompletionRequest),
-    signal,
-  });
-
-  if (!response.ok) {
-    // try to parse the OpenAI error payload (incl. description)
-    let errorPayload: object | null = null;
-    try {
-      errorPayload = await response.json();
-    } catch (e) {
-      // ignore
-    }
-    throw new Error(`${response.status} · ${response.statusText}${errorPayload ? ' · ' + JSON.stringify(errorPayload) : ''}`);
-  }
-
-  return response;
-}
-
-// error function: send them down the stream as text
-const sendErrorAndClose = (controller: ReadableStreamDefaultController, encoder: TextEncoder, message: string) => {
-  controller.enqueue(encoder.encode(message));
-  controller.close();
-};
+import { ApiChatInput, chatCompletionPayload, extractOpenaiChatInputs, postToOpenAI } from './chat';
+import { OpenAIAPI } from '@/types/api-openai';
 
 
-async function chatStreamRepeater(apiCommon: ApiCommonInputs, payload: Omit<OpenAIAPI.Chat.CompletionsRequest, 'stream' | 'n'>, signal: AbortSignal): Promise<ReadableStream> {
-  const encoder = new TextEncoder();
+async function chatStreamRepeater(input: ApiChatInput, signal: AbortSignal): Promise<ReadableStream> {
 
   // Handle the abort event when the connection is closed by the client
   signal.addEventListener('abort', () => {
@@ -92,16 +13,20 @@ async function chatStreamRepeater(apiCommon: ApiCommonInputs, payload: Omit<Open
   });
 
   // begin event streaming from the OpenAI API
+  const encoder = new TextEncoder();
 
   let upstreamResponse: Response;
   try {
-    upstreamResponse = await fetchOpenAIChatCompletions(apiCommon, payload, signal);
+    upstreamResponse = await postToOpenAI(input.api, '/v1/chat/completions', chatCompletionPayload(input, true), signal);
   } catch (error: any) {
     console.log(error);
     const message =
       '[OpenAI Issue] ' + (error?.message || typeof error === 'string' ? error : JSON.stringify(error)) + (error?.cause ? ' · ' + error.cause : '');
     return new ReadableStream({
-      start: (controller) => sendErrorAndClose(controller, encoder, message),
+      start: controller => {
+        controller.enqueue(encoder.encode(message));
+        controller.close();
+      },
     });
   }
 
@@ -158,23 +83,6 @@ async function chatStreamRepeater(apiCommon: ApiCommonInputs, payload: Omit<Open
   });
 }
 
-// Next.js API route
-
-interface ApiCommonInputs {
-  apiKey?: string;
-  apiHost?: string;
-  apiOrgId?: string;
-}
-
-export interface ApiChatInput extends ApiCommonInputs {
-  model: string;
-  messages: ApiChatMessage[];
-  temperature?: number;
-  max_tokens?: number;
-}
-
-export type ApiChatMessage = OpenAIAPI.Chat.CompletionMessage;
-
 
 /**
  * The client will be sent a stream of words. As an extra (an totally optional) 'data channel' we send a
@@ -186,26 +94,9 @@ export interface ApiChatFirstOutput {
 }
 
 export default async function handler(req: NextRequest): Promise<Response> {
-  const {
-    apiKey: userApiKey, apiHost: userApiHost, apiOrgId: userApiOrgId,
-    model, messages,
-    temperature = 0.5, max_tokens = 2048,
-  } = await req.json() as ApiChatInput;
-
-  const apiCommon: ApiCommonInputs = {
-    apiKey: (userApiKey || process.env.OPENAI_API_KEY || '').trim(),
-    apiHost: (userApiHost || process.env.OPENAI_API_HOST || 'api.openai.com').trim().replaceAll('https://', ''),
-    apiOrgId: (userApiOrgId || process.env.OPENAI_API_ORG_ID || '').trim(),
-  };
-  i18n?.init();  if (!apiCommon.apiKey) return new Response(i18n?.t('streamChat.missingApiKey'), { status: 400 });
-
   try {
-
-    const stream: ReadableStream = await chatStreamRepeater(apiCommon, {
-      model, messages,
-      temperature, max_tokens,
-    }, req.signal);
-
+    const apiChatInput = await extractOpenaiChatInputs(req);
+    const stream: ReadableStream = await chatStreamRepeater(apiChatInput, req.signal);
     return new NextResponse(stream);
   } catch (error: any) {
     if (error.name === 'AbortError') {
@@ -216,10 +107,10 @@ export default async function handler(req: NextRequest): Promise<Response> {
       return new Response(i18n?.t('streamChat.resetByClient'), { status: 499 }); // Use 499 status code for client closed request
     } else {
       console.error('Fetch request failed:', error);
-      return new Response(i18n?.t('streamChat.fetchFailed'), { status: 500 });
+      return new NextResponse(`[Issue] ${error}`, { status: 400 });
     }
   }
-}
+};
 
 //noinspection JSUnusedGlobalSymbols
 export const config = {

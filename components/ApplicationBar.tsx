@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { shallow } from 'zustand/shallow';
 
-import { IconButton, ListDivider, ListItemDecorator, Menu, MenuItem, Sheet, Stack, Switch, useColorScheme } from '@mui/joy';
+import { Badge, IconButton, ListDivider, ListItemDecorator, Menu, MenuItem, Sheet, Stack, Switch, useColorScheme } from '@mui/joy';
 import { SxProps } from '@mui/joy/styles/types';
 import ClearIcon from '@mui/icons-material/Clear';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -18,6 +18,7 @@ import { LocaleId, Locales, ChatModelId, ChatModels, SystemPurposeId, SystemPurp
 import { ConfirmationModal } from '@/components/dialogs/ConfirmationModal';
 import { PagesMenu } from '@/components/Pages';
 import { StyledDropdown } from '@/components/util/StyledDropdown';
+import { StyledDropdownWithSymbol } from '@/components/util/StyledDropdownWithSymbol';
 import { useChatStore } from '@/lib/store-chats';
 import { useSettingsStore } from '@/lib/store-settings';
 
@@ -74,10 +75,11 @@ export function ApplicationBar(props: {
 
   // conversation actions
 
-  const { isEmpty, chatModelId, systemPurposeId, localeId, setMessages, setChatModelId, setSystemPurposeId, setLocaleId } = useChatStore((state) => {
+  const { conversationsCount, isConversationEmpty, chatModelId, systemPurposeId, localeId, setMessages, setChatModelId, setSystemPurposeId, setLocaleId } = useChatStore((state) => {
     const conversation = state.conversations.find((conversation) => conversation.id === props.conversationId);
     return {
-      isEmpty: conversation ? !conversation.messages.length : true,
+      conversationsCount: state.conversations.length,
+      isConversationEmpty: conversation ? !conversation.messages.length : true,
       localeId: conversation ? conversation.localeId : null,
       chatModelId: conversation ? conversation.chatModelId : null,
       systemPurposeId: conversation ? conversation.systemPurposeId : null,
@@ -124,30 +126,26 @@ export function ApplicationBar(props: {
     // Navigate to the new URL with the new locale
     router.push(currentPath, `${newLocale}${currentPath}`, { locale: false });
   };
+  return <>
+    {/* Top Bar with 2 icons and Model/Purpose selectors */}
+    <Sheet
+      variant='solid' color='neutral' invertedColors
+      sx={{
+        p: 1,
+        display: 'flex', flexDirection: 'row', justifyContent: 'space-between',
+        ...(props.sx || {}),
+      }}>
 
-  return (
-    <>
-      {/* Top Bar with 2 icons and Model/Purpose selectors */}
-      <Sheet
-        variant="solid"
-        color="neutral"
-        invertedColors
-        sx={{
-          p: 1,
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          ...(props.sx || {}),
-        }}
-      >
-        <IconButton variant="plain" onClick={(event) => setPagesMenuAnchor(event.currentTarget)}>
+      <IconButton variant='plain' onClick={event => setPagesMenuAnchor(event.currentTarget)}>
+        <Badge variant='solid' size='sm' badgeContent={conversationsCount < 2 ? 0 : conversationsCount}>
           <MenuIcon />
-        </IconButton>
+        </Badge>
+      </IconButton>
 
         <Stack direction="row" sx={{ my: 'auto' }}>
           {chatModelId && <StyledDropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />}
 
-          {systemPurposeId && <StyledDropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />}
+        {systemPurposeId && <StyledDropdownWithSymbol items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />}
 
           {localeId && <StyledDropdown items={Locales} value={localeId} onChange={handleLocaleChange} />}
         </Stack>
@@ -205,16 +203,16 @@ export function ApplicationBar(props: {
 
         <ListDivider />
 
-        <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationDownload}>
-          <ListItemDecorator>
-            {/*<Badge size='sm' color='danger'>*/}
-            <FileDownloadIcon />
-            {/*</Badge>*/}
-          </ListItemDecorator>
-          Download JSON
-        </MenuItem>
+      <MenuItem disabled={!props.conversationId || isConversationEmpty} onClick={handleConversationDownload}>
+        <ListItemDecorator>
+          {/*<Badge size='sm' color='danger'>*/}
+          <FileDownloadIcon />
+          {/*</Badge>*/}
+        </ListItemDecorator>
+        Download JSON
+      </MenuItem>
 
-        <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationPublish}>
+        <MenuItem disabled={!props.conversationId || isConversationEmpty} onClick={handleConversationPublish}>
           <ListItemDecorator>
             {/*<Badge size='sm' color='primary'>*/}
             <ExitToAppIcon />
@@ -225,7 +223,7 @@ export function ApplicationBar(props: {
 
         <ListDivider />
 
-        <MenuItem disabled={!props.conversationId || isEmpty} onClick={handleConversationClear}>
+        <MenuItem disabled={!props.conversationId || isConversationEmpty} onClick={handleConversationClear}>
           <ListItemDecorator>
             <ClearIcon />
           </ListItemDecorator>

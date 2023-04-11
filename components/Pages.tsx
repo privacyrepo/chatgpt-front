@@ -22,16 +22,14 @@ function ConversationListItem(props: {
   conversationEditTitle: (conversationId: string) => void;
 }) {
   // bind to conversation
-  const conversation = useChatStore((state) => {
-    const conversation = state.conversations.find((conversation) => conversation.id === props.conversationId);
-    return (
-      conversation && {
-        assistantTyping: !!conversation.abortController,
-        chatModelId: conversation.chatModelId,
-        name: conversation.name,
-        systemPurposeId: conversation.systemPurposeId,
-      }
-    );
+  const conversation = useChatStore(state => {
+    const conversation = state.conversations.find(conversation => conversation.id === props.conversationId);
+    return conversation && {
+      assistantTyping: !!conversation.abortController,
+      chatModelId: conversation.chatModelId,
+      name: conversation.userTitle || conversation.autoTitle || conversation.name,
+      systemPurposeId: conversation.systemPurposeId,
+    };
   }, shallow);
 
   // sanity check: shouldn't happen, but just in case
@@ -111,15 +109,14 @@ export function PagesMenu(props: { pagesMenuAnchor: HTMLElement | null; onClose:
 
   // external state
   const conversationIDs = useConversationIDs();
-  const { activeConversationId, addConversation, deleteConversation, setActiveConversation } = useChatStore(
-    (state) => ({
-      activeConversationId: state.activeConversationId,
-      addConversation: state.addConversation,
-      deleteConversation: state.deleteConversation,
-      setActiveConversation: state.setActiveConversationId,
-    }),
-    shallow,
-  );
+  const { activeConversationId, setActiveConversationId, addConversation, deleteConversation, setActiveConversation } = useChatStore(state => ({
+    activeConversationId: state.activeConversationId,
+    setActiveConversationId: state.setActiveConversationId,
+    addConversation: state.addConversation,
+    deleteConversation: state.deleteConversation,
+    setActiveConversation: state.setActiveConversationId,
+  }), shallow);
+
 
   const singleChat = conversationIDs.length === 1;
   const maxReached = conversationIDs.length >= MAX_CONVERSATIONS;
@@ -133,6 +130,7 @@ export function PagesMenu(props: { pagesMenuAnchor: HTMLElement | null; onClose:
   const handleConversationDelete = (e: React.MouseEvent, conversationId: string) => {
     if (!singleChat) {
       e.stopPropagation();
+      setActiveConversationId(conversationId);
       setDeleteConfirmationId(conversationId);
     }
   };
