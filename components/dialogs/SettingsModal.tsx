@@ -233,7 +233,7 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
                   Organization ID
                 </FormLabel>
                 <FormHelperText sx={{ display: 'block' }}>
-                  <Link level='body2' href='https://platform.openai.com/docs/api-reference/authentication' target='_blank'>What is this</Link>
+                  <Link level='body2' href='https://platform.openai.com/docs/api-reference/models' target='_blank'>What is this</Link>
                 </FormHelperText>
               </Box>
               <Input
