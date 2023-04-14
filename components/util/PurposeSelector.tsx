@@ -1,12 +1,13 @@
 import * as React from 'react';
 import { shallow } from 'zustand/shallow';
 
-import { Box, Button, Grid, IconButton, Input, Stack, Textarea, Typography, useTheme } from '@mui/joy';
+import { Box, Button, Checkbox, Grid, IconButton, Input, Stack, Textarea, Typography, useTheme } from '@mui/joy';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 
 import { SystemPurposeId, SystemPurposes } from '@/lib/data';
 import { useChatStore } from '@/lib/store-chats';
+import { usePurposeStore } from '@/lib/store-purposes';
 import { useSettingsStore } from '@/lib/store-settings';
 
 // Constants for tile sizes / grid width - breakpoints need to be computed here to work around
@@ -33,6 +34,7 @@ export function PurposeSelector(props: { conversationId: string; runExample: (ex
   // state
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filteredIDs, setFilteredIDs] = React.useState<SystemPurposeId[] | null>(null);
+  const [editMode, setEditMode] = React.useState(false);
 
   // external state
   const theme = useTheme();
@@ -44,6 +46,7 @@ export function PurposeSelector(props: { conversationId: string; runExample: (ex
       setSystemPurposeId: conversation ? state.setSystemPurposeId : null,
     };
   }, shallow);
+  const { hiddenPurposeIDs, toggleHiddenPurposeId } = usePurposeStore(state => ({ hiddenPurposeIDs: state.hiddenPurposeIDs, toggleHiddenPurposeId: state.toggleHiddenPurposeId }), shallow);
 
   // safety check - shouldn't happen
   if (!systemPurposeId || !setSystemPurposeId) return null;
@@ -78,6 +81,10 @@ export function PurposeSelector(props: { conversationId: string; runExample: (ex
     if (e.key == 'Escape') handleSearchClear();
   };
 
+
+  const toggleEditMode = () => setEditMode(!editMode);
+
+
   const handlePurposeChanged = (purposeId: SystemPurposeId | null) => {
     if (purposeId) setSystemPurposeId(props.conversationId, purposeId);
   };
@@ -88,8 +95,10 @@ export function PurposeSelector(props: { conversationId: string; runExample: (ex
     SystemPurposes['Custom'].systemMessage = v.target.value;
   };
 
+
   // we show them all if the filter is clear (null)
-  const purposeIDs = filteredIDs && showPurposeFinder ? filteredIDs : Object.keys(SystemPurposes);
+  const unfilteredPurposeIDs = (filteredIDs && showPurposeFinder) ? filteredIDs : Object.keys(SystemPurposes);
+  const purposeIDs = editMode ? unfilteredPurposeIDs : unfilteredPurposeIDs.filter(id => !hiddenPurposeIDs.includes(id));
 
   const selectedPurpose = purposeIDs.length ? SystemPurposes[systemPurposeId] ?? null : null;
   const selectedExample = (selectedPurpose?.examples && getRandomElement(selectedPurpose.examples)) || null;
@@ -125,65 +134,74 @@ export function PurposeSelector(props: { conversationId: string; runExample: (ex
 
       <Box sx={{ maxWidth: bpMaxWidth }}>
 
-        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 2, mb: 1 }}>
           <Typography level='body2' color='neutral'>
             Select an AI purpose
           </Typography>
-          {/*<Button variant='plain' color='neutral' size='sm'>*/}
-          {/*  Edit*/}
-          {/*</Button>*/}
+          <Button variant='plain' color='neutral' size='sm' onClick={toggleEditMode}>
+            {editMode ? 'Done' : 'Edit'}
+          </Button>
         </Box>
 
-          <Grid container spacing={tileSpacing} sx={{ justifyContent: 'flex-start' }}>
-            {purposeIDs.map((spId) => (
-              <Grid key={spId}>
-                <Button
-                  variant={systemPurposeId === spId ? 'solid' : 'soft'}
-                  color={systemPurposeId === spId ? 'primary' : 'neutral'}
-                  onClick={() => handlePurposeChanged(spId as SystemPurposeId)}
-                  sx={{
-                    flexDirection: 'column',
-                    fontWeight: 500,
-                    gap: bpTileGap,
-                    height: bpTileSize,
-                    width: bpTileSize,
-                    ...(systemPurposeId !== spId
-                      ? {
-                          boxShadow: theme.vars.shadow.md,
-                          background: theme.vars.palette.background.level1,
-                        }
-                      : {}),
-                  }}
-                >
-                  <div style={{ fontSize: '2rem' }}>{SystemPurposes[spId as SystemPurposeId]?.symbol}</div>
-                  <div>{SystemPurposes[spId as SystemPurposeId]?.title}</div>
-                </Button>
-              </Grid>
-            ))}
-          </Grid>
+        <Grid container spacing={tileSpacing} sx={{ justifyContent: 'flex-start' }}>
+          {purposeIDs.map((spId) => (
+            <Grid key={spId}>
+              <Button
+                variant={(!editMode && systemPurposeId === spId) ? 'solid' : 'soft'}
+                color={(!editMode && systemPurposeId === spId) ? 'primary' : 'neutral'}
+                onClick={() => !editMode && handlePurposeChanged(spId as SystemPurposeId)}
+                sx={{
+                  flexDirection: 'column',
+                  fontWeight: 500,
+                  gap: bpTileGap,
+                  height: bpTileSize,
+                  width: bpTileSize,
+                  ...((editMode || systemPurposeId !== spId) ? {
+                    boxShadow: theme.vars.shadow.md,
+                    background: theme.vars.palette.background.level1,
+                  } : {}),
+                }}
+              >
+                {editMode && (
+                  <Checkbox
+                    label={<Typography level='body2'>show</Typography>}
+                    checked={!hiddenPurposeIDs.includes(spId)} onChange={() => toggleHiddenPurposeId(spId)}
+                    sx={{ alignSelf: 'flex-start' }}
+                  />
+                )}
+                <div style={{ fontSize: '2rem' }}>
+                  {SystemPurposes[spId as SystemPurposeId]?.symbol}
+                </div>
+                <div>
+                  {SystemPurposes[spId as SystemPurposeId]?.title}
+                </div>
+              </Button>
+            </Grid>
+          ))}
+        </Grid>
 
         <Typography
           level='body2'
           sx={{
-            mt: 2,
+            mt: selectedExample ? 1 : 3,
             display: 'flex', alignItems: 'center', gap: 1,
             // justifyContent: 'center',
             '&:hover > button': { opacity: 1 },
           }}>
           {!selectedPurpose
             ? 'Oops! No AI purposes found for your search.'
-            : (selectedExample ? <>
-                <i>{selectedExample}</i>
-                <IconButton
-                  variant='plain' color='neutral' size='md'
-                  onClick={() => props.runExample(selectedExample)}
-                  sx={{ opacity: 0, transition: 'opacity 0.3s' }}
-                >
-                  💬
-                </IconButton>
-              </>
-            ) : (
-              selectedPurpose.description
+            : (selectedExample
+                ? <>
+                  <i>{selectedExample}</i>
+                  <IconButton
+                    variant='plain' color='neutral' size='md'
+                    onClick={() => props.runExample(selectedExample)}
+                    sx={{ opacity: 0, transition: 'opacity 0.3s' }}
+                  >
+                    💬
+                  </IconButton>
+                </>
+                : selectedPurpose.description
             )}
           </Typography>
 

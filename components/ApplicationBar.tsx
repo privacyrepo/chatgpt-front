@@ -44,13 +44,14 @@ export function ApplicationBar(props: {
 
   const { mode: colorMode, setMode: setColorMode } = useColorScheme();
 
-  const { freeScroll, setFreeScroll, showSystemMessages, setShowSystemMessages } = useSettingsStore(
+  const { freeScroll, setFreeScroll, showSystemMessages, setShowSystemMessages, zenMode } = useSettingsStore(
     (state) => ({
       freeScroll: state.freeScroll,
       setFreeScroll: state.setFreeScroll,
       showSystemMessages: state.showSystemMessages,
       setShowSystemMessages: state.setShowSystemMessages,
-    }),
+      zenMode: state.zenMode,
+  }),
     shallow,
   );
 
@@ -75,7 +76,7 @@ export function ApplicationBar(props: {
 
   // conversation actions
 
-  const { conversationsCount, isConversationEmpty, chatModelId, systemPurposeId, localeId, setMessages, setChatModelId, setSystemPurposeId, setLocaleId } = useChatStore((state) => {
+  const { conversationsCount, isConversationEmpty, chatModelId, systemPurposeId, localeId, setMessages, setChatModelId, setSystemPurposeId, setLocaleId, setAutoTitle } = useChatStore((state) => {
     const conversation = state.conversations.find((conversation) => conversation.id === props.conversationId);
     return {
       conversationsCount: state.conversations.length,
@@ -87,6 +88,7 @@ export function ApplicationBar(props: {
       setChatModelId: state.setChatModelId,
       setSystemPurposeId: state.setSystemPurposeId,
       setLocaleId: state.setLocaleId,
+      setAutoTitle: state.setAutoTitle,
     };
   }, shallow);
 
@@ -98,6 +100,7 @@ export function ApplicationBar(props: {
   const handleConfirmedClearConversation = () => {
     if (clearConfirmationId) {
       setMessages(clearConfirmationId, []);
+      setAutoTitle(clearConfirmationId, '');
       setClearConfirmationId(null);
     }
   };
@@ -145,7 +148,10 @@ export function ApplicationBar(props: {
         <Stack direction="row" sx={{ my: 'auto' }}>
           {chatModelId && <StyledDropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />}
 
-        {systemPurposeId && <StyledDropdownWithSymbol items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />}
+        {systemPurposeId && (zenMode === 'cleaner'
+            ? <StyledDropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
+            : <StyledDropdownWithSymbol items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
+        )}
 
           {localeId && <StyledDropdown items={Locales} value={localeId} onChange={handleLocaleChange} />}
         </Stack>
@@ -155,8 +161,10 @@ export function ApplicationBar(props: {
         </IconButton>
       </Sheet>
 
-      {/* Left menu */}
-      {<PagesMenu pagesMenuAnchor={pagesMenuAnchor} onClose={closePagesMenu} />}
+
+    {/* Left menu */}
+    {<PagesMenu conversationId={props.conversationId} pagesMenuAnchor={pagesMenuAnchor} onClose={closePagesMenu} />}
+
 
       {/* Right menu */}
       <Menu
