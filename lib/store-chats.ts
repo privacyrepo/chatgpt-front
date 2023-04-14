@@ -59,12 +59,13 @@ export interface DConversation {
   abortController: AbortController | null;
 }
 
-export const createDefaultConversation = (systemPurposeId?: SystemPurposeId, chatModelId?: ChatModelId, localeId: LocaleId): DConversation => ({
+export const createDefaultConversation = (systemPurposeId?: SystemPurposeId, chatModelId?: ChatModelId, localeId?: LocaleId): DConversation => ({
   id: uuidv4(),
   messages: [],
   systemPurposeId: systemPurposeId || defaultSystemPurposeId,
   chatModelId: chatModelId || defaultChatModelId,
-  localeId,tokenCount: 0,
+  localeId:localeId || defaultLocaleId,
+  tokenCount: 0,
   created: Date.now(),
   updated: Date.now(),
   abortController: null,
@@ -129,7 +130,7 @@ export const useChatStore = create<ChatStore>()(devtools(
         set(state => {
           // inherit some values from the active conversation (matches users' expectations)
           const activeConversation = state.conversations.find((conversation: DConversation): boolean => conversation.id === state.activeConversationId);
-          const conversation = createDefaultConversation(activeConversation?.systemPurposeId, activeConversation?.chatModelId);
+          const conversation = createDefaultConversation(activeConversation?.systemPurposeId, activeConversation?.chatModelId, activeConversation?.localeId);
           return {
             conversations: [
               conversation,
