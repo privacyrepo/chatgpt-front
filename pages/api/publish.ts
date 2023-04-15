@@ -24,9 +24,9 @@ export type ApiPublishResponse = {
   error: string
 };
 
-export const config = { 
-  runtime: 'experimental-edge' 
-};
+// export const config = { 
+//   runtime: 'experimental-edge' 
+// };
 
 /**
  * 'Proxy' that uploads a file to paste.gg.
