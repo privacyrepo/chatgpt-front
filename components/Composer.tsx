@@ -558,7 +558,7 @@ export function Composer(props: {
             onReducedText={handleContentReducerText}
             onClose={handleContentReducerClose}
           />
-        }
+        )}
 
         {/* Clear confirmation modal */}
         <ConfirmationModal
