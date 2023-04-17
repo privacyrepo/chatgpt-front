@@ -43,11 +43,24 @@ interface SettingsStore {
   modelMaxResponseTokens: number;
   setModelMaxResponseTokens: (modelMaxResponseTokens: number) => void;
 
+  // ElevenLabs Text to Speech settings
+
+  elevenLabsApiKey: string;
+  setElevenLabsApiKey: (apiKey: string) => void;
+
+  elevenLabsVoiceId: string;
+  setElevenLabsVoiceId: (voiceId: string) => void;
+
+  elevenLabsAutoSpeak: 'off' | 'firstLine';
+  setElevenLabsAutoSpeak: (autoSpeak: 'off' | 'firstLine') => void;
+
 }
 
 export const useSettingsStore = create<SettingsStore>()(
   persist(
     (set) => ({
+
+      // UI settings
 
       centerMode: 'wide',
       setCenterMode: (centerMode: 'narrow' | 'wide' | 'full') => set({ centerMode }),
@@ -66,6 +79,8 @@ export const useSettingsStore = create<SettingsStore>()(
 
       zenMode: 'clean',
       setZenMode: (zenMode: 'clean' | 'cleaner') => set({ zenMode }),
+
+      // OpenAI API settings
 
       apiKey: (function() {
         // this will be removed in April
@@ -86,6 +101,17 @@ export const useSettingsStore = create<SettingsStore>()(
       modelMaxResponseTokens: 1024,
       setModelMaxResponseTokens: (modelMaxResponseTokens: number) => set({ modelMaxResponseTokens: modelMaxResponseTokens }),
 
+      // ElevenLabs Text to Speech settings
+
+      elevenLabsApiKey: '',
+      setElevenLabsApiKey: (elevenLabsApiKey: string) => set({ elevenLabsApiKey }),
+
+      elevenLabsVoiceId: '',
+      setElevenLabsVoiceId: (elevenLabsVoiceId: string) => set({ elevenLabsVoiceId }),
+
+      elevenLabsAutoSpeak: 'firstLine',
+      setElevenLabsAutoSpeak: (elevenLabsAutoSpeak: 'off' | 'firstLine') => set({ elevenLabsAutoSpeak }),
+
     }),
     {
       name: 'app-settings',
@@ -96,40 +122,58 @@ export const useSettingsStore = create<SettingsStore>()(
 /// Composer Store
 
 interface ComposerStore {
-  history: {
+
+  // state
+  sentMessages: {
     date: number,
     text: string,
     count: number,
   }[];
 
-  appendMessageToHistory: (text: string) => void;
+  // actions
+  appendSentMessage: (text: string) => void;
+  clearSentMessages: () => void;
+
 }
 
 export const useComposerStore = create<ComposerStore>()(
   persist((set, get) => ({
-      history: [],
 
-      appendMessageToHistory: (text: string) => {
+      sentMessages: [],
+
+      appendSentMessage: (text: string) => {
         const date = Date.now();
-        const history = [...(get().history || [])];
+        const list = [...(get().sentMessages || [])];
 
         // take the item from the array, matching by text
-        let item = history.find((item) => item.text === text);
+        let item = list.find((item) => item.text === text);
         if (item) {
-          history.splice(history.indexOf(item), 1);
+          list.splice(list.indexOf(item), 1);
           item.date = date;
           item.count++;
         } else
           item = { date, text, count: 1 };
 
-        // prepend the item to the history array
-        history.unshift(item);
+        // prepend the item
+        list.unshift(item);
 
         // update the store (limiting max items)
-        set({ history: history.slice(0, 20) });
+        set({ sentMessages: list.slice(0, 20) });
       },
+
+      clearSentMessages: () => set({ sentMessages: [] }),
+
     }),
     {
       name: 'app-composer',
+      version: 1,
+      migrate: (state: any, version): ComposerStore => {
+        // 0 -> 1: rename history to sentMessages
+        if (state && version === 0) {
+          state.sentMessages = state.history;
+          delete state.history;
+        }
+        return state as ComposerStore;
+      },
     }),
 );

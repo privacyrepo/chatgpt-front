@@ -33,6 +33,14 @@ export const useSpeechRecognition = (onResultCallback: (transcript: string) => v
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isiPhone = /iPhone|iPod/.test(navigator.userAgent);
+
+      if (isSafari || isiPhone) {
+        console.warn('Speech recognition is disabled on iPhones and Safari browsers.');
+        return;
+      }
+
       const Speech = ((window as any).SpeechRecognition ||
         (window as any).webkitSpeechRecognition ||
         (window as any).mozSpeechRecognition ||
@@ -56,9 +64,10 @@ export const useSpeechRecognition = (onResultCallback: (transcript: string) => v
           let transcript = event.results[event.results.length - 1][0].transcript;
           // shall we have these smarts?
           transcript = (transcript || '')
-            .replaceAll(' question mark', '?')
             .replaceAll(' comma', ',')
-            .replaceAll(' exclamation mark', '!');
+            .replaceAll(' exclamation mark', '!')
+            .replaceAll(' period', '.')
+            .replaceAll(' question mark', '?');
           if (transcript)
             onResultCallback(transcript);
         };
