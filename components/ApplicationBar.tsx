@@ -154,7 +154,7 @@ export function ApplicationBar(props: {
             : <AppBarDropdownWithSymbol items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
         )}
 
-          {localeId && <StyledDropdown items={Locales} value={localeId} onChange={handleLocaleChange} />}
+          {localeId && <AppBarDropdown items={Locales} value={localeId} onChange={handleLocaleChange} />}
         </Stack>
 
         <IconButton variant="plain" onClick={(event) => setActionsMenuAnchor(event.currentTarget)}>
