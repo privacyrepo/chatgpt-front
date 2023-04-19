@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { shallow } from 'zustand/shallow';
 import { useTranslation } from 'next-i18next'
-import { Box, Button, CircularProgress, FormControl, FormHelperText, FormLabel, IconButton, Input, Modal, ModalClose, ModalDialog, ModalOverflow, Option, Radio, RadioGroup, Select,Slider, Stack, Switch, Typography } from '@mui/joy';
+import { Box, Button, CircularProgress, FormControl, FormHelperText, FormLabel, IconButton, Input, Modal, ModalClose, ModalDialog, ModalOverflow, Option, Radio, RadioGroup, Select,Slider, Stack, Switch, Tooltip, Typography } from '@mui/joy';
 import { SxProps } from '@mui/joy/styles/types';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import KeyIcon from '@mui/icons-material/Key';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -12,16 +13,19 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import WidthNormalIcon from '@mui/icons-material/WidthNormal';
 import WidthWideIcon from '@mui/icons-material/WidthWide';
 
+import languages from '@/lib/languages.json' assert { type: 'json' };
 import { ElevenLabs } from '@/types/api-elevenlabs';
 import { Link } from '@/components/util/Link';
 import { useQuery } from '@tanstack/react-query';
-import { useSettingsStore } from '@/lib/store-settings';
+import { useSettingsStore } from '@/lib/stores/store-settings';
+
+
+const uniformGap: number = 2;
 
 
 const requireUserKeyOpenAI = !process.env.HAS_SERVER_KEY_OPENAI;
 
 export const requireUserKeyElevenLabs = !process.env.HAS_SERVER_KEY_ELEVENLABS;
-
 
 export const isValidOpenAIApiKey = (apiKey?: string) =>
   !!apiKey && apiKey.startsWith('sk-') && apiKey.length > 40;
@@ -98,8 +102,8 @@ function ElevenLabsSection() {
   const colWidth = 150;
 
   return (
-    <Section title='Text To Speech' collapsible>
-      <Stack direction='column' sx={{ gap: 3, mt: -0.8 }}>
+    <Section title='Text To Speech' collapsible collapsed>
+      <Stack direction='column' sx={{ gap: uniformGap, mt: -0.8 }}>
 
         <FormControl orientation='horizontal' sx={{ justifyContent: 'space-between' }}>
           <FormLabel sx={{ minWidth: colWidth }}>
@@ -193,7 +197,7 @@ function AdvancedSection() {
 
   return (
     <Section title='Advanced AI settings' collapsible collapsed={true} disclaimer='Adjust only if you are familiar with these terms' sx={{ mt: 2 }}>
-      <Stack direction='column' sx={{ gap: 3, mt: -0.8, maxWidth: 400 }}>
+      <Stack direction='column' sx={{ gap: uniformGap, mt: -0.8, maxWidth: 400 }}>
 
         <FormControl orientation='horizontal' sx={{ justifyContent: 'space-between' }}>
           <Box sx={{ minWidth: 130 }}>
@@ -263,6 +267,45 @@ function AdvancedSection() {
   );
 }
 
+
+function LanguageSelect() {
+  // external state
+  const { preferredLanguage, setPreferredLanguage } = useSettingsStore(state => ({ preferredLanguage: state.preferredLanguage, setPreferredLanguage: state.setPreferredLanguage }), shallow);
+
+  const handleLanguageChanged = (event: any, newValue: string | null) => {
+    if (!newValue) return;
+    setPreferredLanguage(newValue as string);
+
+    // NOTE: disabled, to make sure the code can be adapted at runtime - will re-enable to trigger translations, if not dynamically switchable
+    //if (typeof window !== 'undefined')
+    //  window.location.reload();
+  };
+
+  const languageOptions = React.useMemo(() => Object.entries(languages).map(([language, localesOrCode]) =>
+    typeof localesOrCode === 'string'
+      ? (
+        <Option key={localesOrCode} value={localesOrCode}>
+          {language}
+        </Option>
+      ) : (
+        Object.entries(localesOrCode).map(([country, code]) => (
+          <Option key={code} value={code}>
+            {`${language} (${country})`}
+          </Option>
+        ))
+      )), []);
+
+  return (
+    <Select value={preferredLanguage} onChange={handleLanguageChanged}
+            indicator={<KeyboardArrowDownIcon />}
+            slotProps={{
+              root: { sx: { minWidth: 200 } },
+              indicator: { sx: { opacity: 0.5 } },
+            }}>
+      {languageOptions}
+    </Select>
+  );
+}
 
 /**
  * Component that allows the User to modify the application settings,
@@ -346,7 +389,19 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
 
 
         <Section>
-          <Stack direction='column' sx={{ gap: 3, maxWidth: 400 }}>
+          <Stack direction='column' sx={{ gap: uniformGap }}>
+
+            <FormControl orientation='horizontal' sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <FormLabel>Language</FormLabel>
+                <Tooltip title='Not all browsers may support these languages. Please note that speech input is unavailable on iPhone/Safari.'>
+                  <FormHelperText>
+                    Speech input <InfoOutlinedIcon sx={{ mx: 0.5 }} />
+                  </FormHelperText>
+                </Tooltip>
+              </Box>
+              <LanguageSelect />
+            </FormControl>
 
             <FormControl orientation='horizontal' sx={{ ...hideOnMobile, alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>

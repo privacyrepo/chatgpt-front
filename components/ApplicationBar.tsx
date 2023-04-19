@@ -14,13 +14,13 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
+import { AppBarDropdown } from '@/components/util/AppBarDropdown';
+import { AppBarDropdownWithSymbol } from '@/components/util/AppBarDropdownWithSymbol';
 import { LocaleId, Locales, ChatModelId, ChatModels, SystemPurposeId, SystemPurposes } from '@/lib/data';
 import { ConfirmationModal } from '@/components/dialogs/ConfirmationModal';
 import { PagesMenu } from '@/components/Pages';
-import { StyledDropdown } from '@/components/util/StyledDropdown';
-import { StyledDropdownWithSymbol } from '@/components/util/StyledDropdownWithSymbol';
-import { useChatStore } from '@/lib/store-chats';
-import { useSettingsStore } from '@/lib/store-settings';
+import { useChatStore } from '@/lib/stores/store-chats';
+import { useSettingsStore } from '@/lib/stores/store-settings';
 
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
@@ -145,12 +145,13 @@ export function ApplicationBar(props: {
         </Badge>
       </IconButton>
 
-        <Stack direction="row" sx={{ my: 'auto' }}>
-          {chatModelId && <StyledDropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />}
+      <Stack direction='row' sx={{ my: 'auto' }}>
+
+        {chatModelId && <AppBarDropdown items={ChatModels} value={chatModelId} onChange={handleChatModelChange} />}
 
         {systemPurposeId && (zenMode === 'cleaner'
-            ? <StyledDropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
-            : <StyledDropdownWithSymbol items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
+            ? <AppBarDropdown items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
+            : <AppBarDropdownWithSymbol items={SystemPurposes} value={systemPurposeId} onChange={handleSystemPurposeChange} />
         )}
 
           {localeId && <StyledDropdown items={Locales} value={localeId} onChange={handleLocaleChange} />}

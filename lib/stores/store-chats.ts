@@ -3,8 +3,8 @@ import { devtools, persist } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import { v4 as uuidv4 } from 'uuid';
 
-import { LocaleId, defaultLocaleId, ChatModelId, defaultChatModelId, defaultSystemPurposeId, SystemPurposeId } from '@/lib/data';
-import { updateTokenCount } from '@/lib/tokens';
+import { ChatModelId, defaultChatModelId, defaultSystemPurposeId, SystemPurposeId } from '@/lib/data';
+import { updateTokenCount } from '@/lib/llm/tokens';
 
 
 /// Conversations Store
@@ -28,7 +28,6 @@ export interface ChatStore {
   deleteMessage: (conversationId: string, messageId: string) => void;
   editMessage: (conversationId: string, messageId: string, updatedMessage: Partial<DMessage>, touch: boolean) => void;
   setChatModelId: (conversationId: string, chatModelId: ChatModelId) => void;
-  setLocaleId:(conversationId: string, localeId: LocaleId) => void;
   setSystemPurposeId: (conversationId: string, systemPurposeId: SystemPurposeId) => void;
   setAutoTitle: (conversationId: string, autoTitle: string) => void;
   setUserTitle: (conversationId: string, userTitle: string) => void;
@@ -49,7 +48,6 @@ export interface DConversation {
   messages: DMessage[];
   systemPurposeId: SystemPurposeId;
   chatModelId: ChatModelId;
-  localeId: LocaleId;
   userTitle?: string;
   autoTitle?: string;
   tokenCount: number;                 // f(messages, chatModelId)
@@ -59,12 +57,11 @@ export interface DConversation {
   abortController: AbortController | null;
 }
 
-export const createDefaultConversation = (systemPurposeId?: SystemPurposeId, chatModelId?: ChatModelId, localeId?: LocaleId): DConversation => ({
+export const createDefaultConversation = (systemPurposeId?: SystemPurposeId, chatModelId?: ChatModelId): DConversation => ({
   id: uuidv4(),
   messages: [],
   systemPurposeId: systemPurposeId || defaultSystemPurposeId,
   chatModelId: chatModelId || defaultChatModelId,
-  localeId:localeId || defaultLocaleId,
   tokenCount: 0,
   created: Date.now(),
   updated: Date.now(),
@@ -130,7 +127,7 @@ export const useChatStore = create<ChatStore>()(devtools(
         set(state => {
           // inherit some values from the active conversation (matches users' expectations)
           const activeConversation = state.conversations.find((conversation: DConversation): boolean => conversation.id === state.activeConversationId);
-          const conversation = createDefaultConversation(activeConversation?.systemPurposeId, activeConversation?.chatModelId, activeConversation?.localeId);
+          const conversation = createDefaultConversation(activeConversation?.systemPurposeId, activeConversation?.chatModelId);
           return {
             conversations: [
               conversation,
@@ -241,12 +238,6 @@ export const useChatStore = create<ChatStore>()(devtools(
             ...(setUpdated && { updated: Date.now() }),
           };
         }),
-
-        setLocaleId: (conversationId: string, localeId: LocaleId) =>
-        get()._editConversation(conversationId,
-          {
-            localeId,
-          }),
 
       setChatModelId: (conversationId: string, chatModelId: ChatModelId) =>
         get()._editConversation(conversationId, conversation => {
