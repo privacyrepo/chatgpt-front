@@ -191,7 +191,7 @@ export function ApplicationBar(props: {
           <FileDownloadIcon />
           {/*</Badge>*/}
         </ListItemDecorator>
-        Download JSON
+        {t('applicationBar.downloadJSON')}
       </MenuItem>
 
         <MenuItem disabled={!props.conversationId || isConversationEmpty} onClick={handleConversationPublish}>
