@@ -12,7 +12,6 @@ import MenuIcon from '@mui/icons-material/Menu';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
-import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { AppBarDropdown } from '@/components/util/AppBarDropdown';
 import { AppBarDropdownWithSymbol } from '@/components/util/AppBarDropdownWithSymbol';
@@ -44,16 +43,10 @@ export function ApplicationBar(props: {
 
   const { mode: colorMode, setMode: setColorMode } = useColorScheme();
 
-  const { freeScroll, setFreeScroll, showSystemMessages, setShowSystemMessages, zenMode } = useSettingsStore(
-    (state) => ({
-      freeScroll: state.freeScroll,
-      setFreeScroll: state.setFreeScroll,
-      showSystemMessages: state.showSystemMessages,
-      setShowSystemMessages: state.setShowSystemMessages,
-      zenMode: state.zenMode,
-  }),
-    shallow,
-  );
+  const { showSystemMessages, setShowSystemMessages, zenMode } = useSettingsStore(state => ({
+    showSystemMessages: state.showSystemMessages, setShowSystemMessages: state.setShowSystemMessages,
+    zenMode: state.zenMode,
+  }), shallow);
 
   const { t } = useTranslation('common');
   const router = useRouter();
@@ -63,8 +56,6 @@ export function ApplicationBar(props: {
   const closeActionsMenu = () => setActionsMenuAnchor(null);
 
   const handleDarkModeToggle = () => setColorMode(colorMode === 'dark' ? 'light' : 'dark');
-
-  const handleScrollModeToggle = () => setFreeScroll(!freeScroll);
 
   const handleSystemMessagesToggle = () => setShowSystemMessages(!showSystemMessages);
 
@@ -167,41 +158,23 @@ export function ApplicationBar(props: {
     {<PagesMenu conversationId={props.conversationId} pagesMenuAnchor={pagesMenuAnchor} onClose={closePagesMenu} />}
 
 
-      {/* Right menu */}
-      <Menu
-        variant="plain"
-        color="neutral"
-        size="lg"
-        placement="bottom-end"
-        sx={{ minWidth: 280 }}
-        open={!!actionsMenuAnchor}
-        anchorEl={actionsMenuAnchor}
-        onClose={closeActionsMenu}
-        disablePortal={false}
-      >
-        <MenuItem>
-          <ListItemDecorator>
-            <DarkModeIcon />
-          </ListItemDecorator>
-          {t('applicationBar.dark')}
-          <Switch checked={colorMode === 'dark'} onChange={handleDarkModeToggle} sx={{ ml: 'auto' }} />
-        </MenuItem>
+    {/* Right menu */}
+    <Menu
+      variant='plain' color='neutral' size='lg' placement='bottom-end' sx={{ minWidth: 280 }}
+      open={!!actionsMenuAnchor} anchorEl={actionsMenuAnchor} onClose={closeActionsMenu}
+      disablePortal={false}>
 
-        <MenuItem>
-          <ListItemDecorator>
-            <SettingsSuggestIcon />
-          </ListItemDecorator>
-          {t('applicationBar.systemText')}
-          <Switch checked={showSystemMessages} onChange={handleSystemMessagesToggle} sx={{ ml: 'auto' }} />
-        </MenuItem>
+      <MenuItem onClick={handleDarkModeToggle}>
+        <ListItemDecorator><DarkModeIcon /></ListItemDecorator>
+        {t('applicationBar.dark')}
+        <Switch checked={colorMode === 'dark'} onChange={handleDarkModeToggle} sx={{ ml: 'auto' }} />
+      </MenuItem>
 
-        <MenuItem>
-          <ListItemDecorator>
-            <SwapVertIcon />
-          </ListItemDecorator>
-          {t('applicationBar.freeScroll')}
-          <Switch checked={freeScroll} onChange={handleScrollModeToggle} sx={{ ml: 'auto' }} />
-        </MenuItem>
+      <MenuItem onClick={handleSystemMessagesToggle}>
+        <ListItemDecorator><SettingsSuggestIcon /></ListItemDecorator>
+        {t('applicationBar.systemText')}
+        <Switch checked={showSystemMessages} onChange={handleSystemMessagesToggle} sx={{ ml: 'auto' }} />
+      </MenuItem>
 
         <MenuItem onClick={handleActionShowSettings}>
           <ListItemDecorator>

@@ -192,7 +192,7 @@ function RenderCode(props: { codeBlock: CodeBlock, sx?: SxProps }) {
           opacity: 0, transition: 'opacity 0.3s',
         }}>
         {hasSVG && (
-          <Tooltip title={renderSVG ? 'Code' : 'Draw'} variant='solid'>
+          <Tooltip title={renderSVG ? 'Show Code' : 'Render SVG'} variant='solid'>
             <IconButton variant={renderSVG ? 'solid' : 'soft'} color='neutral' onClick={() => setShowSVG(!showSVG)}>
               <ShapeLineOutlinedIcon />
             </IconButton>
@@ -307,7 +307,7 @@ function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: str
  * or collapsing long user messages.
  *
  */
-export function ChatMessage(props: { message: DMessage, isLast: boolean, onMessageDelete: () => void, onMessageEdit: (text: string) => void, onMessageRunFrom: (offset: number) => void }) {
+export function ChatMessage(props: { message: DMessage, isBottom: boolean, onMessageDelete: () => void, onMessageEdit: (text: string) => void, onMessageRunFrom: (offset: number) => void }) {
   const {
     text: messageText,
     sender: messageSender,
@@ -471,6 +471,7 @@ export function ChatMessage(props: { message: DMessage, isLast: boolean, onMessa
       borderBottom: `1px solid ${theme.vars.palette.divider}`,
       // borderBottomColor: `rgba(${theme.vars.palette.neutral.mainChannel} / 0.2)`,
       position: 'relative',
+      ...(props.isBottom && { mb: 'auto' }),
       '&:hover > button': { opacity: 1 },
     }}>
 
@@ -581,7 +582,7 @@ export function ChatMessage(props: { message: DMessage, isLast: boolean, onMessa
           {fromUser && (
             <MenuItem onClick={handleMenuRunAgain}>
               <ListItemDecorator><FastForwardIcon /></ListItemDecorator>
-              {props.isLast ?  t('chatMessage.runAgain') : 'Restart From Here'}
+              {t('chatMessage.runAgain')}
             </MenuItem>
           )}
           <MenuItem onClick={props.onMessageDelete} disabled={false /*fromSystem*/}>
