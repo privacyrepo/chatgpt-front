@@ -377,6 +377,7 @@ export const restoreConversationFromJson = (json: string): DConversation | null 
       messages: restored.messages,
       systemPurposeId: restored.systemPurposeId || defaultSystemPurposeId,
       chatModelId: restored.chatModelId || defaultChatModelId,
+      localeId: restored.localeId || defaultLocaleId,
       // ...(restored.userTitle && { userTitle: restored.userTitle }),
       // ...(restored.autoTitle && { autoTitle: restored.autoTitle }),
       tokenCount: restored.tokenCount || 0,
