@@ -358,7 +358,7 @@ function AdvancedSection() {
               Organization ID
             </FormLabel>
             <FormHelperText sx={{ display: 'block' }}>
-              <Link level='body2' href={`${Brand.URIs.OpenRepo}/issues/63`} target='_blank'>What is this</Link>
+              <Link level='body2' href={`${Brand.URIs.OpenRepo}`} target='_blank'>What is this</Link>
             </FormHelperText>
           </Box>
           <Input
@@ -523,7 +523,7 @@ export function SettingsModal({ open, onClose }: { open: boolean, onClose: () =>
 
             <FormControl orientation='horizontal' sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <FormLabel>{t('settingsModal.visualclutter')}</FormLabel>
+                <FormLabel>{t('settingsModal.visualClutter')}</FormLabel>
                 <FormHelperText>{zenMode === 'clean' ? `${t('settingsModal.showSenders')}` : `${t('settingsModal.hideSenderAndMenu')}`}</FormHelperText>
               </Box>
               <RadioGroup orientation='horizontal' value={zenMode} onChange={handleZenModeChange}>

@@ -69,9 +69,6 @@ export function ApplicationBar(props: {
   const { t } = useTranslation('common');
   const router = useRouter();
 
-  const closePagesMenu = () => setPagesMenuAnchor(null);
-
-  const closeActionsMenu = () => setActionsMenuAnchor(null);
 
   const handleDarkModeToggle = () => setColorMode(colorMode === 'dark' ? 'light' : 'dark');
 

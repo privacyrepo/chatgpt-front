@@ -441,7 +441,7 @@ export function Composer(props: {
               title={attachFileLegend}>
               <Button fullWidth variant='plain' color='neutral' onClick={handleShowFilePicker} startDecorator={<UploadFileIcon />}
                       sx={{ ...hideOnMobile, justifyContent: 'flex-start' }}>
-                Attach
+               {t('composer.attach')}
               </Button>
             </Tooltip>
 
@@ -544,23 +544,12 @@ export function Composer(props: {
               )}
 
               {/* Send / Stop */}
-              {assistantTyping ? (
-                <Button
-                  fullWidth
-                  variant="soft"
-                  color="primary"
-                  disabled={!props.conversationId}
-                  onClick={handleStopClicked}
-                  endDecorator={<StopOutlinedIcon />}
-                >
-                  {t('composer.stop')}
-                </Button>
-              ) : (
-                <Button fullWidth variant="solid" color="primary" disabled={!props.conversationId} onClick={handleSendClicked} endDecorator={<TelegramIcon />}>
-                  {t('composer.chat')}
+              {assistantTyping
+                ? <Button fullWidth variant='soft' color='primary' disabled={!props.conversationId} onClick={handleStopClicked} endDecorator={<StopOutlinedIcon />}>
+                   {t('composer.stop')}
                 </Button>
                 : <Button fullWidth variant='solid' color='primary' disabled={!props.conversationId} onClick={handleSendClicked} onDoubleClick={handleShowSendMode} endDecorator={<TelegramIcon />}>
-                  {sendModeId === 'react' ? 'ReAct' : 'Chat'}
+                  {sendModeId === 'react' ? 'ReAct' :  t('composer.chat')}
                 </Button>}
             </Box>
 
@@ -568,7 +557,7 @@ export function Composer(props: {
             <Stack direction='row' spacing={1} sx={{ ...hideOnMobile, flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'flex-end' }}>
               {sentMessages.length > 0 && (
                 <Button fullWidth variant='plain' color='neutral' startDecorator={<KeyboardArrowUpIcon />} onClick={showSentMessages}>
-                  History
+                   {t('composer.history')}
                 </Button>
               )}
             </Stack>

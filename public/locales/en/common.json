@@ -54,6 +54,7 @@
     "holdMessage": "I will hold on to this for you",
     "chat": "Chat",
     "stop": "Stop",
+    "history":"History",
     "reuseMessages": "Reuse messages 💬",
     "clear": "Clear"
   },

@@ -42,7 +42,7 @@ import { speakText } from '@/lib/util/text-to-speech';
 import { useSettingsStore } from '@/lib/stores/store-settings';
 
 
-import { i18n, useTranslation } from 'next-i18next';
+import { i18n } from 'next-i18next';
 /// Utilities to parse messages into blocks of text and code
 
 type Block = TextBlock | CodeBlock | ImageBlock;
@@ -294,10 +294,6 @@ function copyToClipboard(text: string) {
       .catch((err) => console.error('Failed to copy message: ', err));
 }
 
-export function useTranslate() {
-  const { t } = useTranslation('common');
-  return t;
-}
 function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: string) {
 
   
@@ -333,7 +329,7 @@ function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: str
         check <Link noLinkStyle href='https://platform.openai.com/account/usage' target='_blank'>your usage</Link> and
         make sure the usage is under <Link noLinkStyle href='https://platform.openai.com/account/billing/limits' target='_blank'>the limits</Link>.
       </>;
-    } 
+    }
   }
   return { errorMessage, isAssistantError };
 }
@@ -414,8 +410,6 @@ export function ChatMessage(props: { message: DMessage, isBottom: boolean, onMes
   const fromSystem = messageRole === 'system';
   const fromUser = messageRole === 'user';
   const wasEdited = !!messageUpdated;
-
-  const{t} = useTranslation('common');
 
   // state
   const [forceExpanded, setForceExpanded] = React.useState(false);
@@ -598,18 +592,18 @@ export function ChatMessage(props: { message: DMessage, isBottom: boolean, onMes
           open anchorEl={menuAnchor} onClose={closeOperationsMenu}>
           <MenuItem onClick={handleMenuCopy}>
             <ListItemDecorator><ContentCopyIcon /></ListItemDecorator>
-            {t('chatMessage.copy')}
+            {i18n?.t('chatMessage.copy')}
           </MenuItem>
           {isSpeakable && (
             <MenuItem onClick={handleMenuSpeak}>
               <ListItemDecorator><RecordVoiceOverIcon /></ListItemDecorator>
-              Speak
+              {i18n?.t('chatMessage.speak')}
             </MenuItem>
           )}
           <MenuItem onClick={handleMenuEdit}>
             <ListItemDecorator><EditIcon /></ListItemDecorator>
-            {isEditing ? t('chatMessage.discard') : t('chatMessage.edit')}
-            {!isEditing && <span style={{ opacity: 0.5, marginLeft: '8px' }}> ( {t('chatMessage.doubleClick')})</span>}
+            {isEditing ? i18n?.t('chatMessage.discard') : i18n?.t('chatMessage.edit')}
+            {!isEditing && <span style={{ opacity: 0.5, marginLeft: '8px' }}> ({i18n?.t('chatMessage.doubleClick')})</span>}
           </MenuItem>
           <ListDivider />
           {fromAssistant && (
@@ -621,12 +615,12 @@ export function ChatMessage(props: { message: DMessage, isBottom: boolean, onMes
           {fromUser && (
             <MenuItem onClick={handleMenuRunAgain}>
               <ListItemDecorator><FastForwardIcon /></ListItemDecorator>
-              {t('chatMessage.runAgain')}
+              {i18n?.t('chatMessage.runAgain')}
             </MenuItem>
           )}
           <MenuItem onClick={props.onMessageDelete} disabled={false /*fromSystem*/}>
             <ListItemDecorator><ClearIcon /></ListItemDecorator>
-            {t('chatMessage.delete')}
+            {i18n?.t('chatMessage.delete')}
           </MenuItem>
         </Menu>
       )}
