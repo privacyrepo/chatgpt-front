@@ -76,9 +76,6 @@ export const useSettingsStore = create<SettingsStore>()(
       centerMode: 'wide',
       setCenterMode: (centerMode: 'narrow' | 'wide' | 'full') => set({ centerMode }),
 
-      freeScroll: false,
-      setFreeScroll: (freeScroll: boolean) => set({ freeScroll }),
-
       renderMarkdown: true,
       setRenderMarkdown: (renderMarkdown: boolean) => set({ renderMarkdown }),
 
