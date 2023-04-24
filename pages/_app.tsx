@@ -7,8 +7,9 @@ import { CssBaseline, CssVarsProvider } from '@mui/joy';
 import { appWithTranslation } from 'next-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { createEmotionCache, theme } from '@/lib/theme';
 import '../styles/GithubMarkdown.css';
+import { Brand } from '@/lib/brand';
+import { createEmotionCache, theme } from '@/lib/theme';
 
 
 // Client-side cache, shared for the whole session of the user in the browser.
@@ -23,7 +24,8 @@ function MyApp({ Component, emotionCache = clientSideEmotionCache, pageProps }: 
   return <>
     <CacheProvider value={emotionCache}>
       <Head>
-        <meta name='viewport' content='initial-scale=1, width=device-width' />
+        <title>{Brand.Title.Common}</title>
+        <meta name='viewport' content='minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no' />
       </Head>
       {/* Rect-query provider */}
       <QueryClientProvider client={queryClient}>

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { shallow } from 'zustand/shallow';
 
-import { Box, Button, Card, Grid, IconButton, ListDivider, ListItemDecorator, Menu, MenuItem, Stack, Textarea, Tooltip, Typography, useTheme } from '@mui/joy';
+import { Box, Button, Card, Grid, IconButton, ListDivider, ListItemDecorator, Menu, MenuItem, Radio, Stack, Textarea, Tooltip, Typography, useTheme } from '@mui/joy';
 import { ColorPaletteProp, SxProps, VariantProp } from '@mui/joy/styles/types';
 import ClearIcon from '@mui/icons-material/Clear';
 import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
@@ -15,7 +15,7 @@ import StopOutlinedIcon from '@mui/icons-material/StopOutlined';
 import TelegramIcon from '@mui/icons-material/Telegram';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 
-import { ChatModels } from '@/lib/data';
+import { ChatModels, SendModeId, SendModes } from '@/lib/data';
 import { ConfirmationModal } from '@/components/dialogs/ConfirmationModal';
 import { ContentReducerModal } from '@/components/dialogs/ContentReducerModal';
 import { TokenBadge } from '@/components/util/TokenBadge';
@@ -23,8 +23,10 @@ import { TokenProgress } from '@/components/util/TokenProgress';
 import { convertHTMLTableToMarkdown } from '@/lib/util/markdown';
 import { countModelTokens } from '@/lib/llm/tokens';
 import { extractPdfText } from '@/lib/util/pdf';
+import { isValidProdiaApiKey, requireUserKeyProdia } from '@/components/dialogs/SettingsModal';
 import { useChatStore } from '@/lib/stores/store-chats';
-import { useComposerStore, useSettingsStore } from '@/lib/stores/store-settings';
+import { useComposerStore } from '@/lib/stores/store-composer';
+import { useSettingsStore } from '@/lib/stores/store-settings';
 import { useSpeechRecognition } from '@/components/util/useSpeechRecognition';
 
 import { useTranslation } from 'next-i18next';
@@ -115,6 +117,29 @@ const MicButton = (props: { variant: VariantProp, color: ColorPaletteProp, onCli
   </Tooltip>;
 
 
+const SendModeMenu = (props: { anchorEl: HTMLAnchorElement, sendMode: SendModeId, onSetSendMode: (sendMode: SendModeId) => void, onClose: () => void, }) =>
+  <Menu
+    variant='plain' color='neutral' size='md' placement='top-end' sx={{ minWidth: 320, overflow: 'auto' }}
+    open anchorEl={props.anchorEl} onClose={props.onClose}>
+
+    <MenuItem color='neutral' selected>Conversation Mode</MenuItem>
+
+    <ListDivider />
+
+    {Object.entries(SendModes).map(([key, data]) =>
+      <MenuItem key={'send-mode-' + key} onClick={() => props.onSetSendMode(key as SendModeId)}>
+        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+          <Radio checked={key === props.sendMode} />
+          <Box>
+            <Typography>{data.label}</Typography>
+            <Typography level='body2'>{data.description}</Typography>
+          </Box>
+        </Box>
+      </MenuItem>)}
+
+  </Menu>;
+
+
 const SentMessagesMenu = (props: {
   anchorEl: HTMLAnchorElement, onClose: () => void,
   messages: { date: number; text: string; count: number }[],
@@ -168,13 +193,14 @@ export function Composer(props: {
   const [isDragging, setIsDragging] = React.useState(false);
   const [reducerText, setReducerText] = React.useState('');
   const [reducerTextTokens, setReducerTextTokens] = React.useState(0);
+  const [sendModeMenuAnchor, setSendModeMenuAnchor] = React.useState<HTMLAnchorElement | null>(null);
   const [sentMessagesAnchor, setSentMessagesAnchor] = React.useState<HTMLAnchorElement | null>(null);
   const [confirmClearSent, setConfirmClearSent] = React.useState(false);
   const attachmentFileInputRef = React.useRef<HTMLInputElement>(null);
 
   // external state
   const theme = useTheme();
-  const { sentMessages, appendSentMessage, clearSentMessages } = useComposerStore();
+  const { sendModeId, setSendModeId, sentMessages, appendSentMessage, clearSentMessages } = useComposerStore();
   const stopTyping = useChatStore(state => state.stopTyping);
   const modelMaxResponseTokens = useSettingsStore(state => state.modelMaxResponseTokens);
 
@@ -209,6 +235,10 @@ export function Composer(props: {
       appendSentMessage(text);
     }
   };
+
+  const handleShowSendMode = (event: React.MouseEvent<HTMLAnchorElement>) => setSendModeMenuAnchor(event.currentTarget);
+
+  const handleHideSendMode = () => setSendModeMenuAnchor(null);
 
   const handleStopClicked = () => props.conversationId && stopTyping(props.conversationId);
 
@@ -283,7 +313,7 @@ export function Composer(props: {
 
   const handleShowFilePicker = () => attachmentFileInputRef.current?.click();
 
-  const handleLoadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLoadAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target?.files;
     if (files && files.length >= 1) await loadAndAttachFiles(files);
 
@@ -381,7 +411,11 @@ export function Composer(props: {
     );
   };
 
-  const textPlaceholder: string = `Type ${props.isDeveloperMode ? 'your message and drop source files' : 'a message, or drop text files'}...`;
+  const prodiaApiKey = isValidProdiaApiKey(useSettingsStore(state => state.prodiaApiKey));
+  const isProdiaConfigured = !requireUserKeyProdia || prodiaApiKey;
+  const textPlaceholder: string = props.isDeveloperMode
+    ? 'Tell me what you need, add drop source files...'
+    : isProdiaConfigured ? 'Type, /imagine, or drop text files...' : 'Type a message, or drop text files...';
 
   return (
     <Box sx={props.sx}>
@@ -393,21 +427,23 @@ export function Composer(props: {
             <Stack>
               {/*<Typography level='body3' sx={{mb: 2}}>{t("composer.context")}</Typography>*/}
 
-              <IconButton variant="plain" color="neutral" onClick={handleShowFilePicker} sx={{ ...hideOnDesktop }}>
-                <UploadFileIcon />
-              </IconButton>
-              <Tooltip title={<> {t('composer.attachFiles', { isDeveloperMode: props.isDeveloperMode })} 👇</>} variant="solid" placement="top-start">
-                <Button
-                  fullWidth
-                  variant="plain"
-                  color="neutral"
-                  onClick={handleShowFilePicker}
-                  startDecorator={<UploadFileIcon />}
-                  sx={{ ...hideOnMobile, justifyContent: 'flex-start' }}
-                >
-                  {t('composer.attach')}
-                </Button>
-              </Tooltip>
+            {/*<Typography level='body3' sx={{mb: 2}}>Context</Typography>*/}
+
+            {isSpeechEnabled && <Box sx={{ mb: { xs: 1, md: 2 }, ...hideOnDesktop }}>
+              <MicButton variant={micVariant} color={micColor} onClick={handleMicClicked} />
+            </Box>}
+
+            <IconButton variant='plain' color='neutral' onClick={handleShowFilePicker} sx={{ ...hideOnDesktop }}>
+              <UploadFileIcon />
+            </IconButton>
+            <Tooltip
+              variant='solid' placement='top-start'
+              title={attachFileLegend}>
+              <Button fullWidth variant='plain' color='neutral' onClick={handleShowFilePicker} startDecorator={<UploadFileIcon />}
+                      sx={{ ...hideOnMobile, justifyContent: 'flex-start' }}>
+                Attach
+              </Button>
+            </Tooltip>
 
               <Box sx={{ mt: { xs: 1, md: 2 } }} />
               <Box sx={{ mt: { xs: 1, md: 2 } }} />
@@ -428,12 +464,9 @@ export function Composer(props: {
                 </Button>
               </Tooltip>
 
-            {isSpeechEnabled && <Box sx={{ mt: { xs: 1, md: 2 }, ...hideOnDesktop }}>
-              <MicButton variant={micVariant} color={micColor} onClick={handleMicClicked} />
-            </Box>}
+            <input type='file' multiple hidden ref={attachmentFileInputRef} onChange={handleLoadAttachment} />
 
-              <input type="file" multiple hidden ref={attachmentFileInputRef} onChange={handleLoadFile} />
-            </Stack>
+          </Stack>
 
           {/* Edit box, with Drop overlay */}
           <Box sx={{ flexGrow: 1, position: 'relative' }}>
@@ -526,7 +559,9 @@ export function Composer(props: {
                 <Button fullWidth variant="solid" color="primary" disabled={!props.conversationId} onClick={handleSendClicked} endDecorator={<TelegramIcon />}>
                   {t('composer.chat')}
                 </Button>
-              )}
+                : <Button fullWidth variant='solid' color='primary' disabled={!props.conversationId} onClick={handleSendClicked} onDoubleClick={handleShowSendMode} endDecorator={<TelegramIcon />}>
+                  {sendModeId === 'react' ? 'ReAct' : 'Chat'}
+                </Button>}
             </Box>
 
             {/* [desktop-only] row with Sent Messages button */}
@@ -539,6 +574,12 @@ export function Composer(props: {
             </Stack>
           </Stack>
         </Grid>
+
+
+        {/* Mode selector */}
+        {!!sendModeMenuAnchor && (
+          <SendModeMenu anchorEl={sendModeMenuAnchor} sendMode={sendModeId} onSetSendMode={setSendModeId} onClose={handleHideSendMode} />
+        )}
 
         {/* Sent messages menu */}
         {!!sentMessagesAnchor && (
